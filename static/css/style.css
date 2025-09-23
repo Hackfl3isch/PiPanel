@@ -1,0 +1,75 @@
+/* Grundlayout */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #111;
+    color: #fff;
+}
+
+/* Karten */
+.card {
+    background-color: #222;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 40px auto;
+    width: 320px;
+    text-align: center;
+}
+
+/* Emojis */
+.emoji {
+    font-family: 'Noto Color Emoji', Arial, sans-serif;
+}
+
+/* Spritpreise */
+.sprit-alias {
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+.treibstoff {
+    margin-left: 10px;
+}
+
+/* Swiper */
+.swiper {
+    width: 100vw;
+    height: 100vh;
+}
+
+/* Wetter Slide: keine Scrollbar */
+.wetter-slide {
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Sprit Slide: Scrollen per Finger */
+.sprit-slide {
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: pan-y; /* vertikales Scrollen erlauben */
+}
+
+/* Scrollbarer Container für Spritpreise */
+.scrollable {
+    max-height: 80vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* smooth scrolling auf Touchscreens */
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: auto;
+    padding-right: 10px;
+}
+
+/* Scrollbar unsichtbar */
+.scrollable::-webkit-scrollbar {
+    width: 0px;
+}
+.scrollable::-webkit-scrollbar-thumb {
+    background: transparent;
+}
+.scrollable::-webkit-scrollbar-track {
+    background: transparent;
+}
