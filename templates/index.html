@@ -189,7 +189,7 @@
                 <div class="frame-container">
                     <div class="frame">
                         <h2>Batterie</h2>
-                        <p>SolarSOC: <span id="SolarSOC">{{ solar['SolarSOC'].wert if 'SolarSOC' in solar else '-' }}%</span></p>
+                        <p>Füllstand Akku: <span id="SolarSOC">{{ solar['SolarSOC'].wert if 'SolarSOC' in solar else '-' }}%</span></p>
                     </div>
                     <div class="frame">
                         <h2>PV-Ertrag</h2>
@@ -275,9 +275,9 @@
     updateSprit();
     updateSolar();
 
-    setInterval(updateWetter, 600000);
-    setInterval(updateSprit, 600000);
-    setInterval(updateSolar, 600000);
+    setInterval(updateWetter, 300000);
+    setInterval(updateSprit, 300000);
+    setInterval(updateSolar, 300000);
 </script>
 
 </body>
