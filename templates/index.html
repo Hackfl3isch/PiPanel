@@ -127,6 +127,8 @@
                         <div class="frame-title">Wetter Morgen</div>
                         <div class="frame-item">Min morgen: <span id="tempMinMorgen">{{ wetter['TemperaturMinimalMorgen'] }}</span> °C</div>
                         <div class="frame-item">Max morgen: <span id="tempMaxMorgen">{{ wetter['TemperaturMaximalMorgen'] }}</span> °C</div>
+                        <div class="frame-item"><span class="emoji">🌅</span> Sonnenaufgang Morgen: <span id="sonnenaufgangmorgen">{{ wetter['SonnenaufgangMorgen'] }}</span></div>
+                        <div class="frame-item"><span class="emoji">🌇</span> Sonnenuntergang Morgen: <span id="sonnenuntergangmorgen">{{ wetter['SonnenuntergangMorgen'] }}</span></div>
                     </div>
                 </div>
             </div>
@@ -232,6 +234,8 @@
                 document.getElementById('tempMaxMorgen').innerText = data.TemperaturMaximalMorgen;
                 document.getElementById('sonnenaufgang').innerText = data.SonnenaufgangHeute;
                 document.getElementById('sonnenuntergang').innerText = data.SonnenuntergangHeute;
+                document.getElementById('sonnenaufgangmorgen').innerText = data.SonnenaufgangMorgen;
+                document.getElementById('sonnenuntergangmorgen').innerText = data.SonnenuntergangMorgen;
             });
     }
 
