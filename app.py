@@ -22,10 +22,13 @@ def get_wetter():
     string_aliases = [
         "SonnenaufgangHeute",
         "SonnenuntergangHeute",
-        "WetterStatusAktuell"
+        "WetterStatusAktuell",
+	    "SonnenaufgangMorgen",
+	    "SonnenuntergangMorgen"
     ]
 
     wetter = {}
+
 
     # Zahlenwerte: pro Alias nur den neuesten Wert
     query_num = """
