@@ -21,6 +21,65 @@
             color: #fff;
         }
 
+    /* --- Startpage Layout --- */
+    .startpage-slide {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .startpage-time {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .time-display {
+        font-size: 4em;
+        font-weight: bold;
+    }
+
+    .day-display {
+        font-size: 1.6em;
+        margin-top: 5px;
+    }
+
+    .date-display {
+        font-size: 1.4em;
+        color: #ccc;
+    }
+
+    .startpage-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .startpage-box {
+        background: #333;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .box-title {
+        font-size: 1.3em;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .box-value {
+        font-size: 2em;
+        font-weight: bold;
+    }
+
+    .box-sub {
+        margin-top: 10px;
+        font-size: 1.2em;
+    }
+
+
+
         .card {
             background-color: #222;
             border-radius: 12px;
@@ -99,12 +158,83 @@
         .swiper { width: 100vw; height: 100vh; }
         .wetter-slide { overflow: hidden; -webkit-user-select: none; user-select: none; }
         .sprit-slide { overflow: hidden; -webkit-user-select: none; user-select: none; }
+
+        /* Uhr oben rechts */
+        .clock {
+            position: fixed;
+            top: 10px;
+            right: 15px;
+            font-size: 2em;   /* groß für 7"-Display */
+            font-weight: bold;
+            color: #fff;      /* grün leuchtend */
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 8px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
 
+<!-- Uhrzeit -->
+<div id="clock" class="clock"></div>
+
 <div class="swiper">
     <div class="swiper-wrapper">
+	<!-- 🏠 Startpage Slide -->
+<!-- 🏠 Startpage Slide -->
+<div class="swiper-slide startpage-slide">
+    <div class="card">
+        <!-- Uhrzeit, Datum, Wochentag -->
+        <div class="startpage-time">
+            <div id="startpage-clock" class="time-display">--:--:--</div>
+            <div id="startpage-day" class="day-display">---</div>
+            <div id="startpage-date" class="date-display">--.--.--</div>
+        </div>
+
+        <!-- Drei-Spalten-Bereich -->
+        <div class="startpage-grid">
+            <!-- PV -->
+            <div class="startpage-box">
+                <div class="box-title"><span class="emoji">☀️</span> PV-Gesamt</div>
+                <div class="box-value" id="pvGesamt">
+                    {{ startpage['PV_gesamt'] if 'PV_gesamt' in startpage else '-' }} kW
+                </div>
+		<div class="box-sub" style="font-size: 1.4rem; font-weight: bold;">
+    Batterie:<br> <span id="SolarSOCStart">{{ startpage['SolarSOC'] if 'SolarSOC' in startpage else '-' }}%</span>
+</div>
+            </div>
+
+            <!-- Wetter -->
+            <div class="startpage-box">
+                <div class="box-title"><span class="emoji">🌦</span> Aktuelles Wetter</div>
+                <div class="box-value" id="wetterStatusStart">
+                    {{ startpage['WetterStatusAktuell'] if 'WetterStatusAktuell' in startpage else '-' }}
+                </div>
+                <div class="box-sub">
+                    Temperatur:
+                    <span id="tempStart">
+                        {{ startpage['TemperaturMomentan'] if 'TemperaturMomentan' in startpage else '-' }} °C
+                    </span>
+                </div>
+            </div>
+
+            <!-- Günstigste Tankstelle -->
+            <div class="startpage-box">
+                <div class="box-title"><span class="emoji">⛽</span> Günstigste Tankstelle</div>
+                <div class="box-value" id="cheapName">
+                    {{ startpage['Cheapest_Name'] if 'Cheapest_Name' in startpage else '-' }}
+                </div>
+                <div class="box-sub">
+                    Diesel:
+                    <span id="cheapDiesel">
+                        {{ startpage['Cheapest_Diesel'] if 'Cheapest_Diesel' in startpage else '-' }} €/L
+                    </span>
+                </div>
+            </div>
+        </div> <!-- ✅ Ende startpage-grid -->
+    </div> <!-- ✅ Ende card -->
+</div> <!-- ✅ Ende startpage-slide -->
 
         <!-- Wetter Slide -->
         <div class="swiper-slide wetter-slide">
@@ -116,8 +246,8 @@
                         <div class="frame-title">Wetter Heute</div>
                         <div class="frame-item">Aktuell: <span id="wetterStatus">{{ wetter['WetterStatusAktuell'] }}</span></div>
                         <div class="frame-item">Momentane Temperatur: <span id="tempAktuell">{{ wetter['TemperaturMomentan'] }}</span> °C</div>
-                        <div class="frame-item">Min heute: <span id="tempMinHeute">{{ wetter['TemperaturMinimalHeute'] }}</span> °C</div>
-                        <div class="frame-item">Max heute: <span id="tempMaxHeute">{{ wetter['TemperaturMaximalHeute'] }}</span> °C</div>
+                        <div class="frame-item">Tiefstemperatur heute: <span id="tempMinHeute">{{ wetter['TemperaturMinimalHeute'] }}</span> °C</div>
+                        <div class="frame-item">Höchsttemperatur heute: <span id="tempMaxHeute">{{ wetter['TemperaturMaximalHeute'] }}</span> °C</div>
                         <div class="frame-item"><span class="emoji">🌅</span> Sonnenaufgang: <span id="sonnenaufgang">{{ wetter['SonnenaufgangHeute'] }}</span></div>
                         <div class="frame-item"><span class="emoji">🌇</span> Sonnenuntergang: <span id="sonnenuntergang">{{ wetter['SonnenuntergangHeute'] }}</span></div>
                     </div>
@@ -125,8 +255,8 @@
                     <!-- Rechter Frame: Morgen -->
                     <div class="wetter-frame">
                         <div class="frame-title">Wetter Morgen</div>
-                        <div class="frame-item">Min morgen: <span id="tempMinMorgen">{{ wetter['TemperaturMinimalMorgen'] }}</span> °C</div>
-                        <div class="frame-item">Max morgen: <span id="tempMaxMorgen">{{ wetter['TemperaturMaximalMorgen'] }}</span> °C</div>
+                        <div class="frame-item">Tiefstemperatur morgen: <span id="tempMinMorgen">{{ wetter['TemperaturMinimalMorgen'] }}</span> °C</div>
+                        <div class="frame-item">Höchsttemperatur morgen: <span id="tempMaxMorgen">{{ wetter['TemperaturMaximalMorgen'] }}</span> °C</div>
                         <div class="frame-item"><span class="emoji">🌅</span> Sonnenaufgang Morgen: <span id="sonnenaufgangmorgen">{{ wetter['SonnenaufgangMorgen'] }}</span></div>
                         <div class="frame-item"><span class="emoji">🌇</span> Sonnenuntergang Morgen: <span id="sonnenuntergangmorgen">{{ wetter['SonnenuntergangMorgen'] }}</span></div>
                     </div>
@@ -143,13 +273,15 @@
                     "JET": ["JET_Diesel","JET_E10","JET_E5"],
                     "BFT Hoffnungsthal": ["BFT_Hoffnungsthal_Diesel","BFT_Hoffnungsthal_E10","BFT_Hoffnungsthal_E5"],
                     "Total": ["Total_Diesel","Total_E10","Total_E5"],
-                    "Mundorf": ["Mundorf_Diesel","Mundorf_E10","Mundorf_E5"]
+                    "Mundorf": ["Mundorf_Diesel","Mundorf_E10","Mundorf_E5"],
+                    "Roth":["Roth_Diesel","Roth_E10","Roth_E5"]
                 } %}
 
                 <div class="sprit-grid">
                     {% set first_row = ["BFT Rösrath", "JET", "BFT Hoffnungsthal"] %}
-                    {% set second_row = ["Total", "Mundorf"] %}
+                    {% set second_row = ["Total", "Mundorf", "Roth"] %}
 
+                    {# Erste Reihe #}
                     {% for station in first_row %}
                     <div class="station-box">
                         <div class="station-name">{{ station }}</div>
@@ -165,26 +297,26 @@
                     </div>
                     {% endfor %}
 
-                    <div class="second-row">
-                        {% for station in second_row %}
-                        <div class="station-box">
-                            <div class="station-name">{{ station }}</div>
-                            {% for alias in tankstellen[station] %}
-                                {% if alias in sprit %}
-                                    {% set typ = alias.split('_')[-1] %}
-                                    <div class="fuel">{{ typ }}: <span id="{{ alias }}">{{ sprit[alias].preis }} €/L</span></div>
-                                {% else %}
-                                    {% set typ = alias.split('_')[-1] %}
-                                    <div class="fuel">{{ typ }}: –</div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
+                    {# Zweite Reihe #}
+                    {% for station in second_row %}
+                    <div class="station-box">
+                        <div class="station-name">{{ station }}</div>
+                        {% for alias in tankstellen[station] %}
+                            {% if alias in sprit %}
+                                {% set typ = alias.split('_')[-1] %}
+                                <div class="fuel">{{ typ }}: <span id="{{ alias }}">{{ sprit[alias].preis }} €/L</span></div>
+                            {% else %}
+                                {% set typ = alias.split('_')[-1] %}
+                                <div class="fuel">{{ typ }}: –</div>
+                            {% endif %}
                         {% endfor %}
                     </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
-	<!-- PV Slide -->
+
+        <!-- PV Slide -->
         <div class="swiper-slide solar-slide">
             <div class="card">
                 <h1 class="emoji">☀️ PV-Anlage</h1>
@@ -197,6 +329,10 @@
                         <h2>PV-Ertrag</h2>
                         <p>PV Ost: <span id="PV_Ost">{{ solar['PV_Ost'].wert if 'PV_Ost' in solar else '-' }} kW</span></p>
                         <p>PV West: <span id="PV_West">{{ solar['PV_West'].wert if 'PV_West' in solar else '-' }} kW</span></p>
+                    </div>
+                    <div class="frame">
+                        <h2>Hausverbrauch</h2>
+                        <p>Aktueller Verbrauch: <span id="EnergiebedarfHaus">{{ solar['EnergiebedarfHaus'].wert if 'EnergiebedarfHaus' in solar else '-' }} kW</span></p>
                     </div>
                 </div>
             </div>
@@ -216,12 +352,54 @@
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script>
-    const swiper = new Swiper('.swiper', {
-        direction: 'horizontal',
-        loop: true,
-        pagination: { el: '.swiper-pagination', clickable: true }
-    });
+  const swiper = new Swiper('.swiper', {
+      direction: 'horizontal',
+      loop: true,
+      pagination: { el: '.swiper-pagination', clickable: true }
+  });
 
+  // Funktion: entscheidet, ob die globale Uhr (#clock) versteckt werden soll
+  function updateClockVisibility() {
+      const clock = document.getElementById('clock');
+      if (!clock || !swiper || !swiper.slides) return;
+
+      // aktiver sichtbarer Slide (das Element, das gerade shown wird)
+      const activeSlide = swiper.slides[swiper.activeIndex];
+
+      // Robust prüfen, ob der sichtbare Inhalt eine Startpage ist:
+      // - wir prüfen die Klasse der sichtbaren Slide UND
+      // - ob innerhalb des sichtbaren Slides ein charakteristisches Element der Startpage existiert
+      //   (z.B. .startpage-time). Das funktioniert auch bei Klonen, weil wir mit dem sichtbaren Slide arbeiten.
+      const looksLikeStartpage =
+          activeSlide.classList.contains('startpage-slide') ||
+          activeSlide.querySelector('.startpage-time') !== null;
+
+      // setze Sichtbarkeit
+      clock.style.display = looksLikeStartpage ? 'none' : 'block';
+  }
+
+  // 1) initial beim Start aufrufen (wichtig!)
+  updateClockVisibility();
+
+  // 2) nach jedem abgeschlossenen Slide-Wechsel
+  swiper.on('slideChangeTransitionEnd', updateClockVisibility);
+
+  // Optional: auch bei 'init' (falls Swiper intern später initialisiert)
+  swiper.on && swiper.on('init', updateClockVisibility);
+
+  // restliche Logik (Uhr aktualisieren etc.) bleibt gleich...
+  function updateClock() {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('de-DE', { hour12: false });
+      document.getElementById('clock').textContent = timeString;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+
+   
+
+    // Wetter
     function updateWetter() {
         fetch('/api/wetter')
             .then(res => res.json())
@@ -239,6 +417,7 @@
             });
     }
 
+    // Sprit
     function updateSprit() {
         fetch('/api/sprit')
             .then(res => res.json())
@@ -248,7 +427,8 @@
                     "JET": ["JET_Diesel","JET_E10","JET_E5"],
                     "BFT Hoffnungsthal": ["BFT_Hoffnungsthal_Diesel","BFT_Hoffnungsthal_E10","BFT_Hoffnungsthal_E5"],
                     "Total": ["Total_Diesel","Total_E10","Total_E5"],
-                    "Mundorf": ["Mundorf_Diesel","Mundorf_E10","Mundorf_E5"]
+                    "Mundorf": ["Mundorf_Diesel","Mundorf_E10","Mundorf_E5"],
+                    "Roth":["Roth_Diesel","Roth_E10","Roth_E5"]
                 };
                 for (const [station, aliases] of Object.entries(tankstellen)) {
                     aliases.forEach(alias => {
@@ -260,13 +440,60 @@
                 }
             });
     }
+	
+    // --- Startpage ---
+    function updateStartpage() {
+        fetch('/api/startpage')
+            .then(res => res.json())
+            .then(data => {
+		document.getElementById('SolarSOCStart').innerText = (data.SolarSOC ?? '-') + '%';
+                document.getElementById('pvGesamt').innerText = (data.PV_gesamt ?? '-') + ' kW';
+                document.getElementById('wetterStatusStart').innerText = data.WetterStatusAktuell ?? '-';
+                document.getElementById('tempStart').innerText = (data.TemperaturMomentan ?? '-') + ' °C';
+                document.getElementById('cheapName').innerText = data.Cheapest_Name ?? '-';
+                document.getElementById('cheapDiesel').innerText = (data.Cheapest_Diesel ?? '-') + ' €/L';
+            });
+    }
 
-// PV-Daten aktualisieren
+    // --- Uhrzeit, Datum, Wochentag auf Startpage ---
+    function updateStartpageClock() {
+        const now = new Date();
+        document.getElementById('startpage-clock').textContent = now.toLocaleTimeString('de-DE', { hour12: false });
+        document.getElementById('startpage-day').textContent = now.toLocaleDateString('de-DE', { weekday: 'long' });
+        document.getElementById('startpage-date').textContent = now.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    setInterval(updateStartpageClock, 1000);
+    updateStartpageClock();
+    updateStartpage();
+
+    // --- Steuert die Anzeige der fixen Uhr ---
+  swiper.on('slideChangeTransitionEnd', function() {
+    const realIndex = swiper.realIndex;
+    const clock = document.getElementById('clock');
+
+    // Den echten (nicht geklonten) Slide mit diesem realIndex finden
+    const realSlide = swiper.slides.find(slide =>
+        slide.getAttribute('data-swiper-slide-index') == realIndex
+    );
+
+    // Prüfen, ob der echte Slide die Startpage ist
+    if (realSlide && realSlide.classList.contains('startpage-slide')) {
+        clock.style.display = 'none';
+    } else {
+        clock.style.display = 'block';
+    }
+});
+
+
+
+
+    // PV-Daten
     function updateSolar() {
         fetch('/api/solar')
             .then(res => res.json())
             .then(data => {
-                ['SolarSOC','PV_Ost','PV_West'].forEach(alias => {
+                ['SolarSOC','PV_Ost','PV_West','EnergiebedarfHaus'].forEach(alias => {
                     const element = document.getElementById(alias);
                     if (element && data[alias]) {
                         element.innerText = data[alias].wert + (alias=='SolarSOC' ? '%' : ' kW');
@@ -278,9 +505,9 @@
     updateWetter();
     updateSprit();
     updateSolar();
-
-    setInterval(updateWetter, 300000);
-    setInterval(updateSprit, 300000);
+    setInterval(updateStartpage, 300000);
+    setInterval(updateWetter, 300000);	
+    setInterval(updateSprit, 60000);
     setInterval(updateSolar, 300000);
 </script>
 
