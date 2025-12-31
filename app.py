@@ -1,8 +1,39 @@
 from flask import Flask, render_template, jsonify
 import mysql.connector
 from datetime import datetime
+import requests   # <<< NEU
 
 app = Flask(__name__)
+
+# ----------------------------------------------------
+# Service-Status prüfen (KitchenOwl & Portainer)
+# ----------------------------------------------------
+def check_services():
+    services = {
+        "KitchenOwl": "http://192.168.178.118:32768/signin",
+        "Portainer": "http://192.168.178.118:9000/#!/auth"
+    }
+
+    status = {}
+
+    for name, url in services.items():
+        try:
+            r = requests.get(url, timeout=3)
+            status[name] = {
+                "url": url,
+                "online": r.status_code < 500,
+                "code": r.status_code
+            }
+        except requests.exceptions.RequestException:
+            status[name] = {
+                "url": url,
+                "online": False,
+                "code": None
+            }
+
+    return status
+
+
 
 # --- Funktion: Wetterdaten abrufen ---
 def get_wetter():
