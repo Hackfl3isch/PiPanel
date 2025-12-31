@@ -34,11 +34,76 @@ def check_services():
     return status
 
 
+# ----------------------------------------------------
+# Startpage-Daten
+# ----------------------------------------------------
+def get_startpage_data():
+    conn = mysql.connector.connect(
+        host="",
+        user="",
+        password="",
+        database=""
+    )
+    cursor = conn.cursor(dictionary=True)
 
-# --- Funktion: Wetterdaten abrufen ---
+    string_aliases = ["Cheapest_Name", "WetterStatusAktuell"]
+    number_aliases = ["SolarSOC","TemperaturMomentan", "PV_Ost", "PV_West","Cheapest_Diesel"]
+
+    startpage = {}
+
+    query_str = """
+        SELECT t.val
+        FROM ts_string t
+        JOIN datapoints d ON t.id = d.id
+        WHERE d.name = %s
+        ORDER BY t.Datum DESC
+        LIMIT 1
+    """
+    for alias in string_aliases:
+        cursor.execute(query_str, (alias,))
+        row = cursor.fetchone()
+        if row:
+            startpage[alias] = row["val"]
+
+    query_num = """
+        SELECT t.val
+        FROM ts_number t
+        JOIN datapoints d ON t.id = d.id
+        WHERE d.name = %s
+        ORDER BY t.Datum DESC
+        LIMIT 1
+    """
+    temp_data = {}
+    for alias in number_aliases:
+        cursor.execute(query_num, (alias,))
+        row = cursor.fetchone()
+        if row:
+            temp_data[alias] = row["val"]
+
+    pv_ost = temp_data.get("PV_Ost", 0)
+    pv_west = temp_data.get("PV_West", 0)
+
+    startpage["TemperaturMomentan"] = temp_data.get("TemperaturMomentan")
+    startpage["PV_gesamt"] = round((pv_ost + pv_west) / 1000.0, 3)
+    startpage["PV_Ost"] = round(pv_ost / 1000.0, 3)
+    startpage["PV_West"] = round(pv_west / 1000.0, 3)
+    startpage["Cheapest_Diesel"] = temp_data.get("Cheapest_Diesel")
+    startpage["SolarSOC"] = temp_data.get("SolarSOC")
+
+    cursor.close()
+    conn.close()
+    return startpage
+
+
+# ----------------------------------------------------
+# Wetter
+# ----------------------------------------------------
 def get_wetter():
     conn = mysql.connector.connect(
-
+        host="",
+        user="",
+        password="",
+        database=""
     )
     cursor = conn.cursor(dictionary=True)
 
@@ -54,16 +119,14 @@ def get_wetter():
         "SonnenaufgangHeute",
         "SonnenuntergangHeute",
         "WetterStatusAktuell",
-	    "SonnenaufgangMorgen",
-	    "SonnenuntergangMorgen"
+        "SonnenaufgangMorgen",
+        "SonnenuntergangMorgen"
     ]
 
     wetter = {}
 
-
-    # Zahlenwerte: pro Alias nur den neuesten Wert
     query_num = """
-        SELECT t.val, t.Datum
+        SELECT t.val
         FROM ts_number t
         JOIN datapoints d ON t.id = d.id
         WHERE d.name = %s
@@ -76,9 +139,8 @@ def get_wetter():
         if row:
             wetter[alias] = row["val"]
 
-    # Stringwerte: pro Alias nur den neuesten Wert
     query_str = """
-        SELECT t.val, t.Datum
+        SELECT t.val
         FROM ts_string t
         JOIN datapoints d ON t.id = d.id
         WHERE d.name = %s
@@ -90,12 +152,11 @@ def get_wetter():
         row = cursor.fetchone()
         if row:
             val = row["val"]
-            # Sonnenaufgang/Sonnenuntergang in HH:MM umwandeln
-            if alias in ["SonnenaufgangHeute", "SonnenuntergangHeute"]:
+            if "Sonnenaufgang" in alias or "Sonnenuntergang" in alias:
                 try:
-                    ts = int(val) / 1000  # Millisekunden → Sekunden
+                    ts = int(val) / 1000
                     val = datetime.fromtimestamp(ts).strftime("%H:%M")
-                except Exception:
+                except:
                     pass
             wetter[alias] = val
 
@@ -103,10 +164,16 @@ def get_wetter():
     conn.close()
     return wetter
 
-# --- Funktion: Spritpreise abrufen ---
+
+# ----------------------------------------------------
+# Spritpreise
+# ----------------------------------------------------
 def get_spritpreise():
     conn = mysql.connector.connect(
-
+        host="",
+        user="",
+        password="",
+        database=""
     )
     cursor = conn.cursor(dictionary=True)
 
@@ -115,12 +182,12 @@ def get_spritpreise():
         "JET_E5","JET_E10","JET_Diesel",
         "Total_E5","Total_E10","Total_Diesel",
         "BFT_Hoffnungsthal_E5","BFT_Hoffnungsthal_E10","BFT_Hoffnungsthal_Diesel",
-        "Mundorf_E5","Mundorf_E10","Mundorf_Diesel"
+        "Mundorf_E5","Mundorf_E10","Mundorf_Diesel","Roth_E5","Roth_Diesel","Roth_E10"
     ]
 
-    latest_prices = {}
+    prices = {}
     query = """
-        SELECT t.val, t.Datum
+        SELECT t.val
         FROM ts_number t
         JOIN datapoints d ON t.id = d.id
         WHERE d.name = %s
@@ -131,24 +198,30 @@ def get_spritpreise():
         cursor.execute(query, (alias,))
         row = cursor.fetchone()
         if row:
-            latest_prices[alias] = {"preis": row["val"], "datum": row["Datum"]}
+            prices[alias] = {"preis": row["val"]}
 
     cursor.close()
     conn.close()
-    return latest_prices
+    return prices
 
-# --- Funktion: Solarwerte abrufen ---
+
+# ----------------------------------------------------
+# Solar
+# ----------------------------------------------------
 def get_solar():
     conn = mysql.connector.connect(
-
+        host="",
+        user="",
+        password="",
+        database=""
     )
     cursor = conn.cursor(dictionary=True)
 
-    aliases = ["SolarSOC", "PV_Ost", "PV_West"]
+    aliases = ["SolarSOC", "PV_Ost", "PV_West","EnergiebedarfHaus"]
+    solar = {}
 
-    latest_solar = {}
     query = """
-        SELECT t.val, t.Datum
+        SELECT t.val
         FROM ts_number t
         JOIN datapoints d ON t.id = d.id
         WHERE d.name = %s
@@ -159,31 +232,55 @@ def get_solar():
         cursor.execute(query, (alias,))
         row = cursor.fetchone()
         if row:
-            latest_solar[alias] = {"wert": row["val"], "datum": row["Datum"]}
+            val = row["val"]
+            if alias != "SolarSOC":
+                val = round(val / 1000.0, 3)
+            solar[alias] = {"wert": val}
 
     cursor.close()
     conn.close()
-    return latest_solar
+    return solar
 
-# --- Routes ---
+
+# ----------------------------------------------------
+# Routes
+# ----------------------------------------------------
 @app.route('/')
 def index():
-    wetter = get_wetter()
-    spritpreise = get_spritpreise()
-    solar = get_solar()
-    return render_template("index.html", wetter=wetter, sprit=spritpreise, solar=solar)
+    return render_template(
+        "index.html",
+        wetter=get_wetter(),
+        sprit=get_spritpreise(),
+        solar=get_solar(),
+        startpage=get_startpage_data()
+    )
+
+
+@app.route('/api/startpage')
+def api_startpage():
+    return jsonify(get_startpage_data())
+
 
 @app.route('/api/wetter')
 def api_wetter():
     return jsonify(get_wetter())
 
+
 @app.route('/api/sprit')
 def api_sprit():
     return jsonify(get_spritpreise())
+
 
 @app.route('/api/solar')
 def api_solar():
     return jsonify(get_solar())
 
+
+@app.route('/api/services')
+def api_services():
+    return jsonify(check_services())
+
+
+# ----------------------------------------------------
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
