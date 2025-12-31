@@ -337,6 +337,33 @@
                 </div>
             </div>
         </div>
+	<!-- 💻 Services Slide (KORRIGIERT) -->
+<div class="swiper-slide service-slide">
+    <div class="card">
+        <h1 class="emoji">💻 Services</h1>
+
+        <div class="startpage-grid">
+            <!-- KitchenOwl Box -->
+            <div class="startpage-box">
+                <div class="box-title">
+                    <span class="emoji">🍽</span> KitchenOwl
+                </div>
+                <div class="box-value" id="KitchenOwlStatus"><span class="emoji">🔴</span> –</div>
+                <div class="box-sub" id="KitchenOwlCode"></div>
+            </div>
+
+            <!-- Portainer Box -->
+            <div class="startpage-box">
+                <div class="box-title">
+                    <span class="emoji">🐳</span> Portainer
+                </div>
+                <div class="box-value" id="PortainerStatus"><span class="emoji">🔴</span> –</div>
+                <div class="box-sub" id="PortainerCode"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
         <!-- Aktien Slide -->
         <div class="swiper-slide">
@@ -397,7 +424,52 @@
   updateClock();
 
 
-   
+   function updateServices() {
+    fetch('/api/services')
+        .then(res => res.json())
+        .then(data => {
+            Object.entries(data).forEach(([name, service]) => {
+                const statusEl = document.getElementById(name + 'Status');
+                const codeEl   = document.getElementById(name + 'Code');
+
+                if (!statusEl) return;
+
+                // Emoji-Kreis im Status
+                const emojiCircle = statusEl.querySelector('.emoji');
+                if (service.online) {
+                    if (emojiCircle) emojiCircle.textContent = '🟢';
+                    statusEl.innerHTML = (emojiCircle ? emojiCircle.outerHTML : '') + ' Online';
+                    statusEl.style.color = '#4CAF50';
+                    if (codeEl) codeEl.innerText = 'HTTP ' + service.code;
+                } else {
+                    if (emojiCircle) emojiCircle.textContent = '🔴';
+                    statusEl.innerHTML = (emojiCircle ? emojiCircle.outerHTML : '') + ' Offline';
+                    statusEl.style.color = '#F44336';
+                    if (codeEl) codeEl.innerText = 'Nicht erreichbar';
+                }
+            });
+        })
+        .catch(() => {
+            ['KitchenOwl','Portainer'].forEach(name => {
+                const statusEl = document.getElementById(name + 'Status');
+                const codeEl   = document.getElementById(name + 'Code');
+                if (statusEl) {
+                    const emojiCircle = statusEl.querySelector('.emoji');
+                    if (emojiCircle) emojiCircle.textContent = '🔴';
+                    statusEl.innerHTML = (emojiCircle ? emojiCircle.outerHTML : '') + ' Fehler';
+                    statusEl.style.color = '#F44336';
+                }
+                if (codeEl) codeEl.innerText = '';
+            });
+        });
+}
+
+
+
+/* Initial + Intervall */
+updateServices();
+setInterval(updateServices, 60000); // alle 60 Sekunden
+
 
     // Wetter
     function updateWetter() {
