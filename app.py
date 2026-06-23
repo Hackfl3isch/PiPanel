@@ -11,7 +11,8 @@ app = Flask(__name__)
 def check_services():
     services = {
         "KitchenOwl": "http://192.168.178.118:32768/signin",
-        "Portainer": "http://192.168.178.118:9000/#!/auth"
+        "Portainer": "http://192.168.178.118:9000/#!/auth",
+	"PiHole": "http://192.168.178.33/admin/login"
     }
 
     status = {}
