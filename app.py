@@ -99,7 +99,7 @@ def evcc_control_loop():
         now = datetime.now()
 
         # Nacht: 22:00 bis 06:00 Uhr
-        if now.hour >= 22 or now.hour < 6:
+        if now.hour >= 22 or now.hour < 9:
 
             set_loadpoint(False)
 
