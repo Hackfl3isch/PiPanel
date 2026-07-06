@@ -2,6 +2,8 @@ from flask import Flask, render_template, jsonify
 import mysql.connector
 from datetime import datetime
 import requests   # <<< NEU
+import threading
+import time
 
 app = Flask(__name__)
 
@@ -33,6 +35,88 @@ def check_services():
             }
 
     return status
+
+# ----------------------------------------------------
+# EVCC Ladepunkt steuern
+# ----------------------------------------------------
+
+EVCC_URL = "http://192.168.178.118:7070"
+
+last_mode = None
+
+
+def get_evcc_battery_soc():
+    """
+    Batteriestand aus EVCC lesen.
+    """
+    try:
+        r = requests.get(f"{EVCC_URL}/api/state", timeout=5)
+        r.raise_for_status()
+
+        data = r.json()
+
+        return float(data["battery"]["soc"])
+
+    except Exception as e:
+        print("EVCC Batteriestand konnte nicht gelesen werden:", e)
+        return None
+
+
+def set_loadpoint(enabled):
+    """
+    Ladepunkt auf minpv oder off schalten.
+    """
+    global last_mode
+
+    mode = "minpv" if enabled else "off"
+
+    # Nur schalten wenn sich etwas geändert hat
+    if mode == last_mode:
+        return
+
+    try:
+        r = requests.post(
+            f"{EVCC_URL}/api/loadpoints/1/mode/{mode}",
+            timeout=5
+        )
+
+        r.raise_for_status()
+
+        last_mode = mode
+
+        print(f"{datetime.now():%H:%M:%S} -> Ladepunkt auf {mode}")
+
+    except Exception as e:
+        print("Fehler beim Schalten:", e)
+		
+def evcc_control_loop():
+    """
+    Prüft jede Minute Uhrzeit und Batteriespeicher.
+    """
+
+    while True:
+
+        now = datetime.now()
+
+        # Nacht: 22:00 bis 06:00 Uhr
+        if now.hour >= 22 or now.hour < 6:
+
+            set_loadpoint(False)
+
+        else:
+
+            soc = get_evcc_battery_soc()
+
+            if soc is not None:
+
+                print(f"Batterie: {soc:.1f}%")
+
+                if soc >= 95:
+                    set_loadpoint(True)
+                if soc <70:
+                    set_loadpoint(False)
+
+        time.sleep(60)
 
 
 # ----------------------------------------------------
@@ -284,4 +368,17 @@ def api_services():
 
 # ----------------------------------------------------
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+
+    thread = threading.Thread(
+        target=evcc_control_loop,
+        daemon=True
+    )
+    thread.start()
+
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=False
+    )
+
+
