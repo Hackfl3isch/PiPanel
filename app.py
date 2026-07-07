@@ -42,6 +42,9 @@ def check_services():
 
 EVCC_URL = "http://192.168.178.118:7070"
 
+# True = Sommerlogik aktiv
+# False = Akku-Regeln komplett deaktivieren
+USE_BATTERY_RULES = True
 last_mode = None
 
 
@@ -88,7 +91,8 @@ def set_loadpoint(enabled):
 
     except Exception as e:
         print("Fehler beim Schalten:", e)
-		
+
+
 def evcc_control_loop():
     """
     Prüft jede Minute Uhrzeit und Batteriespeicher.
@@ -98,11 +102,28 @@ def evcc_control_loop():
 
         now = datetime.now()
 
-        # Nacht: 22:00 bis 06:00 Uhr
+        # --------------------------------------------------
+        # Nachts niemals laden (22:00 - 09:00)
+        # --------------------------------------------------
         if now.hour >= 22 or now.hour < 9:
-
             set_loadpoint(False)
 
+        # --------------------------------------------------
+        # Zwischen 09:00 und 12:00 immer laden
+        # (unabhängig vom Batteriespeicher)
+        # --------------------------------------------------
+        elif 9 <= now.hour < 12:
+            set_loadpoint(True)
+
+        # --------------------------------------------------
+        # Akku-Regeln deaktiviert
+        # --------------------------------------------------
+        elif not USE_BATTERY_RULES:
+            set_loadpoint(True)
+
+        # --------------------------------------------------
+        # Akku-Regeln aktiv
+        # --------------------------------------------------
         else:
 
             soc = get_evcc_battery_soc()
@@ -113,15 +134,14 @@ def evcc_control_loop():
 
                 if soc >= 95:
                     set_loadpoint(True)
-                if soc <70:
+                elif soc < 70:
                     set_loadpoint(False)
 
         time.sleep(60)
-
-
 # ----------------------------------------------------
 # Startpage-Daten
 # ----------------------------------------------------
+
 def get_startpage_data():
     conn = mysql.connector.connect(
         host="",
