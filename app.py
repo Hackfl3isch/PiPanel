@@ -113,7 +113,20 @@ def evcc_control_loop():
         # (unabhängig vom Batteriespeicher)
         # --------------------------------------------------
         elif 9 <= now.hour < 12:
-            set_loadpoint(True)
+
+            soc = get_evcc_battery_soc()
+
+            if soc is not None:
+
+                print(f"Batterie: {soc:.1f}%")
+
+                # Einschalten erst ab 20 %
+                if soc >= 20:
+                    set_loadpoint(True)
+
+                # Ausschalten unter 15 %
+                elif soc < 15:
+                    set_loadpoint(False)
 
         # --------------------------------------------------
         # Akku-Regeln deaktiviert
