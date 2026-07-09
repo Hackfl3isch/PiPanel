@@ -45,49 +45,55 @@ EVCC_URL = "http://192.168.178.118:7070"
 # True = Sommerlogik aktiv
 # False = Akku-Regeln komplett deaktivieren
 USE_BATTERY_RULES = True
-last_mode = None
 
 
-def get_evcc_battery_soc():
+def get_evcc_state():
     """
-    Batteriestand aus EVCC lesen.
+    Liest den aktuellen EVCC-Status.
+
+    Rückgabe:
+        {
+            "soc": float,
+            "mode": str
+        }
     """
+
     try:
         r = requests.get(f"{EVCC_URL}/api/state", timeout=5)
         r.raise_for_status()
 
         data = r.json()
 
-        return float(data["battery"]["soc"])
+        return {
+            "soc": float(data["battery"]["soc"]),
+            "mode": data["loadpoints"][0]["mode"]
+        }
 
     except Exception as e:
-        print("EVCC Batteriestand konnte nicht gelesen werden:", e)
+        print("EVCC Status konnte nicht gelesen werden:", e)
         return None
 
 
-def set_loadpoint(enabled):
+def set_loadpoint(enabled, current_mode):
     """
-    Ladepunkt auf minpv oder off schalten.
+    Schaltet den Ladepunkt nur dann,
+    wenn sich der Modus tatsächlich ändern muss.
     """
-    global last_mode
 
-    mode = "minpv" if enabled else "off"
+    target_mode = "minpv" if enabled else "off"
 
-    # Nur schalten wenn sich etwas geändert hat
-    if mode == last_mode:
+    if current_mode == target_mode:
         return
 
     try:
         r = requests.post(
-            f"{EVCC_URL}/api/loadpoints/1/mode/{mode}",
+            f"{EVCC_URL}/api/loadpoints/1/mode/{target_mode}",
             timeout=5
         )
 
         r.raise_for_status()
 
-        last_mode = mode
-
-        print(f"{datetime.now():%H:%M:%S} -> Ladepunkt auf {mode}")
+        print(f"{datetime.now():%H:%M:%S} -> Ladepunkt auf {target_mode}")
 
     except Exception as e:
         print("Fehler beim Schalten:", e)
@@ -100,57 +106,63 @@ def evcc_control_loop():
 
     while True:
 
+        state = get_evcc_state()
+
+        if state is None:
+            time.sleep(60)
+            continue
+
+        soc = state["soc"]
+        current_mode = state["mode"]
+
+        print(
+            f"{datetime.now():%H:%M:%S} | "
+            f"SoC: {soc:.1f}% | "
+            f"Modus: {current_mode}"
+        )
+
         now = datetime.now()
 
         # --------------------------------------------------
         # Nachts niemals laden (22:00 - 09:00)
         # --------------------------------------------------
         if now.hour >= 22 or now.hour < 9:
-            set_loadpoint(False)
+
+            set_loadpoint(False, current_mode)
 
         # --------------------------------------------------
-        # Zwischen 09:00 und 12:00 immer laden
-        # (unabhängig vom Batteriespeicher)
+        # Zwischen 09:00 und 12:00
+        # Einschalten ab 20 %
+        # Ausschalten unter 15 %
         # --------------------------------------------------
         elif 9 <= now.hour < 12:
 
-            soc = get_evcc_battery_soc()
+            if soc >= 20:
+                set_loadpoint(True, current_mode)
 
-            if soc is not None:
-
-                print(f"Batterie: {soc:.1f}%")
-
-                # Einschalten erst ab 20 %
-                if soc >= 20:
-                    set_loadpoint(True)
-
-                # Ausschalten unter 15 %
-                elif soc < 15:
-                    set_loadpoint(False)
+            elif soc < 15:
+                set_loadpoint(False, current_mode)
 
         # --------------------------------------------------
         # Akku-Regeln deaktiviert
         # --------------------------------------------------
         elif not USE_BATTERY_RULES:
-            set_loadpoint(True)
+
+            set_loadpoint(True, current_mode)
 
         # --------------------------------------------------
         # Akku-Regeln aktiv
         # --------------------------------------------------
         else:
 
-            soc = get_evcc_battery_soc()
+            if soc >= 95:
+                set_loadpoint(True, current_mode)
 
-            if soc is not None:
-
-                print(f"Batterie: {soc:.1f}%")
-
-                if soc >= 95:
-                    set_loadpoint(True)
-                elif soc < 70:
-                    set_loadpoint(False)
+            elif soc < 70:
+                set_loadpoint(False, current_mode)
 
         time.sleep(60)
+
 # ----------------------------------------------------
 # Startpage-Daten
 # ----------------------------------------------------
