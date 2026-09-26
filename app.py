@@ -36,6 +36,7 @@ def check_services():
 
     return status
 
+
 # ----------------------------------------------------
 # EVCC Ladepunkt steuern
 # ----------------------------------------------------
@@ -120,7 +121,10 @@ def evcc_control_loop():
             f"SoC: {soc:.1f}% | "
             f"Modus: {current_mode}"
         )
-
+        if not USE_BATTERY_RULES:
+            time.sleep(6000)
+            continue
+        
         now = datetime.now()
 
         # --------------------------------------------------
@@ -135,7 +139,7 @@ def evcc_control_loop():
         # Einschalten ab 20 %
         # Ausschalten unter 15 %
         # --------------------------------------------------
-        elif 9 <= now.hour < 12:
+        elif 8 <= now.hour < 12:
 
             if soc >= 20:
                 set_loadpoint(True, current_mode)
@@ -146,19 +150,19 @@ def evcc_control_loop():
         # --------------------------------------------------
         # Akku-Regeln deaktiviert
         # --------------------------------------------------
-        elif not USE_BATTERY_RULES:
+        #elif not USE_BATTERY_RULES:
 
-            set_loadpoint(True, current_mode)
+         #   set_loadpoint(True, current_mode)
 
         # --------------------------------------------------
         # Akku-Regeln aktiv
         # --------------------------------------------------
         else:
 
-            if soc >= 95:
+            if soc >= 85:
                 set_loadpoint(True, current_mode)
 
-            elif soc < 70:
+            elif soc < 75:
                 set_loadpoint(False, current_mode)
 
         time.sleep(60)
@@ -166,13 +170,12 @@ def evcc_control_loop():
 # ----------------------------------------------------
 # Startpage-Daten
 # ----------------------------------------------------
-
 def get_startpage_data():
     conn = mysql.connector.connect(
-        host="",
-        user="",
-        password="",
-        database=""
+        host="x",
+        user="x",
+        password="x",
+        database="x"
     )
     cursor = conn.cursor(dictionary=True)
 
@@ -230,27 +233,27 @@ def get_startpage_data():
 # ----------------------------------------------------
 def get_wetter():
     conn = mysql.connector.connect(
-        host="",
-        user="",
-        password="",
-        database=""
+        host="x",
+        user="x",
+        password="x",
+        database="x"
     )
     cursor = conn.cursor(dictionary=True)
 
     number_aliases = [
-        "TemperaturMomentan",
-        "TemperaturMinimalHeute",
-        "TemperaturMaximalHeute",
-        "TemperaturMinimalMorgen",
-        "TemperaturMaximalMorgen"
+        "x",
+        "x",
+        "x",
+        "x",
+        "x"
     ]
 
     string_aliases = [
-        "SonnenaufgangHeute",
-        "SonnenuntergangHeute",
-        "WetterStatusAktuell",
-        "SonnenaufgangMorgen",
-        "SonnenuntergangMorgen"
+        "x",
+        "x",
+        "x",
+        "x",
+        "x"
     ]
 
     wetter = {}
@@ -300,10 +303,10 @@ def get_wetter():
 # ----------------------------------------------------
 def get_spritpreise():
     conn = mysql.connector.connect(
-        host="",
-        user="",
-        password="",
-        database=""
+        host="x",
+        user="x",
+        password="x",
+        database="x"
     )
     cursor = conn.cursor(dictionary=True)
 
@@ -340,10 +343,10 @@ def get_spritpreise():
 # ----------------------------------------------------
 def get_solar():
     conn = mysql.connector.connect(
-        host="",
-        user="",
-        password="",
-        database=""
+        host="x",
+        user="x",
+        password="x",
+        database="x"
     )
     cursor = conn.cursor(dictionary=True)
 
@@ -425,5 +428,3 @@ if __name__ == '__main__':
         port=5000,
         debug=False
     )
-
-
