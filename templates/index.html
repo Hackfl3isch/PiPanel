@@ -172,6 +172,43 @@
             border-radius: 8px;
             z-index: 1000;
         }
+        /* --- Sensoren --- */
+        .sensor-status-dot {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .sensor-online {
+            background-color: #4CAF50;
+        }
+
+        .sensor-offline {
+            background-color: #F44336;
+        }
+
+        .sensor-box {
+            background: #333;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .sensor-name {
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            text-align: center;
+        }
+
+        .sensor-value {
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+    </style>
     </style>
 </head>
 <body>
@@ -181,213 +218,444 @@
 
 <div class="swiper">
     <div class="swiper-wrapper">
-	<!-- 🏠 Startpage Slide -->
-<!-- 🏠 Startpage Slide -->
-<div class="swiper-slide startpage-slide">
-    <div class="card">
-        <!-- Uhrzeit, Datum, Wochentag -->
-        <div class="startpage-time">
-            <div id="startpage-clock" class="time-display">--:--:--</div>
-            <div id="startpage-day" class="day-display">---</div>
-            <div id="startpage-date" class="date-display">--.--.--</div>
+
+        <!-- 🏠 Startpage Slide -->
+        <div class="swiper-slide startpage-slide">
+            <div class="card">
+
+                <!-- Uhrzeit, Datum, Wochentag -->
+                <div class="startpage-time">
+                    <div id="startpage-clock" class="time-display">--:--:--</div>
+                    <div id="startpage-day" class="day-display">---</div>
+                    <div id="startpage-date" class="date-display">--.--.--</div>
+                </div>
+
+                <!-- Drei-Spalten-Bereich -->
+                <div class="startpage-grid">
+
+                    <!-- PV -->
+                    <div class="startpage-box">
+                        <div class="box-title">
+                            <span class="emoji">☀️</span> PV-Gesamt
+                        </div>
+
+                        <div class="box-value" id="pvGesamt">
+                            {{ startpage['PV_gesamt'] if 'PV_gesamt' in startpage else '-' }} kW
+                        </div>
+
+                        <div class="box-sub" style="font-size: 1.4rem; font-weight: bold;">
+                            Batterie:<br>
+                            <span id="SolarSOCStart">
+                                {{ startpage['SolarSOC'] if 'SolarSOC' in startpage else '-' }}%
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Wetter -->
+                    <div class="startpage-box">
+                        <div class="box-title">
+                            <span class="emoji">🌦</span> Aktuelles Wetter
+                        </div>
+
+                        <div class="box-value" id="wetterStatusStart">
+                            {{ startpage['WetterStatusAktuell'] if 'WetterStatusAktuell' in startpage else '-' }}
+                        </div>
+
+                        <div class="box-sub">
+                            Temperatur:
+                            <span id="tempStart">
+                                {{ startpage['TemperaturMomentan'] if 'TemperaturMomentan' in startpage else '-' }} °C
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Günstigste Tankstelle -->
+                    <div class="startpage-box">
+                        <div class="box-title">
+                            <span class="emoji">⛽</span> Günstigste Tankstelle
+                        </div>
+
+                        <div class="box-value" id="cheapName">
+                            {{ startpage['Cheapest_Name'] if 'Cheapest_Name' in startpage else '-' }}
+                        </div>
+
+                        <div class="box-sub">
+                            Diesel:
+                            <span id="cheapDiesel">
+                                {{ startpage['Cheapest_Diesel'] if 'Cheapest_Diesel' in startpage else '-' }} €/L
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
 
-        <!-- Drei-Spalten-Bereich -->
-        <div class="startpage-grid">
-            <!-- PV -->
-            <div class="startpage-box">
-                <div class="box-title"><span class="emoji">☀️</span> PV-Gesamt</div>
-                <div class="box-value" id="pvGesamt">
-                    {{ startpage['PV_gesamt'] if 'PV_gesamt' in startpage else '-' }} kW
-                </div>
-		<div class="box-sub" style="font-size: 1.4rem; font-weight: bold;">
-    Batterie:<br> <span id="SolarSOCStart">{{ startpage['SolarSOC'] if 'SolarSOC' in startpage else '-' }}%</span>
-</div>
-            </div>
-
-            <!-- Wetter -->
-            <div class="startpage-box">
-                <div class="box-title"><span class="emoji">🌦</span> Aktuelles Wetter</div>
-                <div class="box-value" id="wetterStatusStart">
-                    {{ startpage['WetterStatusAktuell'] if 'WetterStatusAktuell' in startpage else '-' }}
-                </div>
-                <div class="box-sub">
-                    Temperatur:
-                    <span id="tempStart">
-                        {{ startpage['TemperaturMomentan'] if 'TemperaturMomentan' in startpage else '-' }} °C
-                    </span>
-                </div>
-            </div>
-
-            <!-- Günstigste Tankstelle -->
-            <div class="startpage-box">
-                <div class="box-title"><span class="emoji">⛽</span> Günstigste Tankstelle</div>
-                <div class="box-value" id="cheapName">
-                    {{ startpage['Cheapest_Name'] if 'Cheapest_Name' in startpage else '-' }}
-                </div>
-                <div class="box-sub">
-                    Diesel:
-                    <span id="cheapDiesel">
-                        {{ startpage['Cheapest_Diesel'] if 'Cheapest_Diesel' in startpage else '-' }} €/L
-                    </span>
-                </div>
-            </div>
-        </div> <!-- ✅ Ende startpage-grid -->
-    </div> <!-- ✅ Ende card -->
-</div> <!-- ✅ Ende startpage-slide -->
 
         <!-- Wetter Slide -->
         <div class="swiper-slide wetter-slide">
             <div class="card">
+
                 <h1 class="emoji">🌤 Wetter</h1>
+
                 <div class="wetter-container">
+
                     <!-- Linker Frame: Heute -->
                     <div class="wetter-frame">
                         <div class="frame-title">Wetter Heute</div>
-                        <div class="frame-item">Aktuell: <span id="wetterStatus">{{ wetter['WetterStatusAktuell'] }}</span></div>
-                        <div class="frame-item">Momentane Temperatur: <span id="tempAktuell">{{ wetter['TemperaturMomentan'] }}</span> °C</div>
-                        <div class="frame-item">Tiefstemperatur heute: <span id="tempMinHeute">{{ wetter['TemperaturMinimalHeute'] }}</span> °C</div>
-                        <div class="frame-item">Höchsttemperatur heute: <span id="tempMaxHeute">{{ wetter['TemperaturMaximalHeute'] }}</span> °C</div>
-                        <div class="frame-item"><span class="emoji">🌅</span> Sonnenaufgang: <span id="sonnenaufgang">{{ wetter['SonnenaufgangHeute'] }}</span></div>
-                        <div class="frame-item"><span class="emoji">🌇</span> Sonnenuntergang: <span id="sonnenuntergang">{{ wetter['SonnenuntergangHeute'] }}</span></div>
+
+                        <div class="frame-item">
+                            Aktuell:
+                            <span id="wetterStatus">
+                                {{ wetter['WetterStatusAktuell'] }}
+                            </span>
+                        </div>
+
+                        <div class="frame-item">
+                            Momentane Temperatur:
+                            <span id="tempAktuell">
+                                {{ wetter['TemperaturMomentan'] }}
+                            </span> °C
+                        </div>
+
+                        <div class="frame-item">
+                            Tiefstemperatur heute:
+                            <span id="tempMinHeute">
+                                {{ wetter['TemperaturMinimalHeute'] }}
+                            </span> °C
+                        </div>
+
+                        <div class="frame-item">
+                            Höchsttemperatur heute:
+                            <span id="tempMaxHeute">
+                                {{ wetter['TemperaturMaximalHeute'] }}
+                            </span> °C
+                        </div>
+
+                        <div class="frame-item">
+                            <span class="emoji">🌅</span>
+                            Sonnenaufgang:
+                            <span id="sonnenaufgang">
+                                {{ wetter['SonnenaufgangHeute'] }}
+                            </span>
+                        </div>
+
+                        <div class="frame-item">
+                            <span class="emoji">🌇</span>
+                            Sonnenuntergang:
+                            <span id="sonnenuntergang">
+                                {{ wetter['SonnenuntergangHeute'] }}
+                            </span>
+                        </div>
                     </div>
+
 
                     <!-- Rechter Frame: Morgen -->
                     <div class="wetter-frame">
                         <div class="frame-title">Wetter Morgen</div>
-                        <div class="frame-item">Tiefstemperatur morgen: <span id="tempMinMorgen">{{ wetter['TemperaturMinimalMorgen'] }}</span> °C</div>
-                        <div class="frame-item">Höchsttemperatur morgen: <span id="tempMaxMorgen">{{ wetter['TemperaturMaximalMorgen'] }}</span> °C</div>
-                        <div class="frame-item"><span class="emoji">🌅</span> Sonnenaufgang Morgen: <span id="sonnenaufgangmorgen">{{ wetter['SonnenaufgangMorgen'] }}</span></div>
-                        <div class="frame-item"><span class="emoji">🌇</span> Sonnenuntergang Morgen: <span id="sonnenuntergangmorgen">{{ wetter['SonnenuntergangMorgen'] }}</span></div>
+
+                        <div class="frame-item">
+                            Tiefstemperatur morgen:
+                            <span id="tempMinMorgen">
+                                {{ wetter['TemperaturMinimalMorgen'] }}
+                            </span> °C
+                        </div>
+
+                        <div class="frame-item">
+                            Höchsttemperatur morgen:
+                            <span id="tempMaxMorgen">
+                                {{ wetter['TemperaturMaximalMorgen'] }}
+                            </span> °C
+                        </div>
+
+                        <div class="frame-item">
+                            <span class="emoji">🌅</span>
+                            Sonnenaufgang Morgen:
+                            <span id="sonnenaufgangmorgen">
+                                {{ wetter['SonnenaufgangMorgen'] }}
+                            </span>
+                        </div>
+
+                        <div class="frame-item">
+                            <span class="emoji">🌇</span>
+                            Sonnenuntergang Morgen:
+                            <span id="sonnenuntergangmorgen">
+                                {{ wetter['SonnenuntergangMorgen'] }}
+                            </span>
+                        </div>
                     </div>
+
                 </div>
             </div>
         </div>
 
+
+        <!-- Sensoren Slide -->
+        <div class="swiper-slide sensor-slide">
+            <div class="card">
+
+                <h1 class="emoji">🌡️ Sensoren</h1>
+
+                <div class="sprit-grid">
+
+                    <!-- Carport -->
+                    <div class="sensor-box">
+
+                        <div class="sensor-name">
+                            Carport
+
+                            <span
+                                id="SensorStatusSchuppenDot"
+                                class="sensor-status-dot sensor-offline">
+                            </span>
+                        </div>
+
+                        <div class="sensor-value">
+                            Temperatur:
+                            <span id="TemperaturSchuppen">
+                                {{ sensoren['TemperaturSchuppen'] if 'TemperaturSchuppen' in sensoren else '-' }} °C
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
         <!-- Spritpreise Slide -->
         <div class="swiper-slide sprit-slide">
             <div class="card">
+
                 <h1 class="emoji">⛽ Spritpreise</h1>
+
                 {% set tankstellen = {
                     "BFT Rösrath": ["BFT_Rösrath_Diesel","BFT_Rösrath_E10","BFT_Rösrath_E5"],
                     "JET": ["JET_Diesel","JET_E10","JET_E5"],
                     "BFT Hoffnungsthal": ["BFT_Hoffnungsthal_Diesel","BFT_Hoffnungsthal_E10","BFT_Hoffnungsthal_E5"],
                     "Total": ["Total_Diesel","Total_E10","Total_E5"],
                     "Mundorf": ["Mundorf_Diesel","Mundorf_E10","Mundorf_E5"],
-                    "Roth":["Roth_Diesel","Roth_E10","Roth_E5"]
+                    "Roth": ["Roth_Diesel","Roth_E10","Roth_E5"]
                 } %}
 
                 <div class="sprit-grid">
+
                     {% set first_row = ["BFT Rösrath", "JET", "BFT Hoffnungsthal"] %}
                     {% set second_row = ["Total", "Mundorf", "Roth"] %}
 
                     {# Erste Reihe #}
                     {% for station in first_row %}
+
                     <div class="station-box">
-                        <div class="station-name">{{ station }}</div>
+
+                        <div class="station-name">
+                            {{ station }}
+                        </div>
+
                         {% for alias in tankstellen[station] %}
+
                             {% if alias in sprit %}
+
                                 {% set typ = alias.split('_')[-1] %}
-                                <div class="fuel">{{ typ }}: <span id="{{ alias }}">{{ sprit[alias].preis }} €/L</span></div>
+
+                                <div class="fuel">
+                                    {{ typ }}:
+                                    <span id="{{ alias }}">
+                                        {{ sprit[alias].preis }} €/L
+                                    </span>
+                                </div>
+
                             {% else %}
+
                                 {% set typ = alias.split('_')[-1] %}
-                                <div class="fuel">{{ typ }}: –</div>
+
+                                <div class="fuel">
+                                    {{ typ }}: –
+                                </div>
+
                             {% endif %}
+
                         {% endfor %}
+
                     </div>
+
                     {% endfor %}
+
 
                     {# Zweite Reihe #}
                     {% for station in second_row %}
+
                     <div class="station-box">
-                        <div class="station-name">{{ station }}</div>
+
+                        <div class="station-name">
+                            {{ station }}
+                        </div>
+
                         {% for alias in tankstellen[station] %}
+
                             {% if alias in sprit %}
+
                                 {% set typ = alias.split('_')[-1] %}
-                                <div class="fuel">{{ typ }}: <span id="{{ alias }}">{{ sprit[alias].preis }} €/L</span></div>
+
+                                <div class="fuel">
+                                    {{ typ }}:
+                                    <span id="{{ alias }}">
+                                        {{ sprit[alias].preis }} €/L
+                                    </span>
+                                </div>
+
                             {% else %}
+
                                 {% set typ = alias.split('_')[-1] %}
-                                <div class="fuel">{{ typ }}: –</div>
+
+                                <div class="fuel">
+                                    {{ typ }}: –
+                                </div>
+
                             {% endif %}
+
                         {% endfor %}
+
                     </div>
+
                     {% endfor %}
+
                 </div>
             </div>
         </div>
+
 
         <!-- PV Slide -->
         <div class="swiper-slide solar-slide">
             <div class="card">
+
                 <h1 class="emoji">☀️ PV-Anlage</h1>
+
                 <div class="frame-container">
+
                     <div class="frame">
                         <h2>Batterie</h2>
-                        <p>Füllstand Akku: <span id="SolarSOC">{{ solar['SolarSOC'].wert if 'SolarSOC' in solar else '-' }}%</span></p>
+
+                        <p>
+                            Füllstand Akku:
+                            <span id="SolarSOC">
+                                {{ solar['SolarSOC'].wert if 'SolarSOC' in solar else '-' }}%
+                            </span>
+                        </p>
                     </div>
+
+
                     <div class="frame">
                         <h2>PV-Ertrag</h2>
-                        <p>PV Ost: <span id="PV_Ost">{{ solar['PV_Ost'].wert if 'PV_Ost' in solar else '-' }} kW</span></p>
-                        <p>PV West: <span id="PV_West">{{ solar['PV_West'].wert if 'PV_West' in solar else '-' }} kW</span></p>
+
+                        <p>
+                            PV Ost:
+                            <span id="PV_Ost">
+                                {{ solar['PV_Ost'].wert if 'PV_Ost' in solar else '-' }} kW
+                            </span>
+                        </p>
+
+                        <p>
+                            PV West:
+                            <span id="PV_West">
+                                {{ solar['PV_West'].wert if 'PV_West' in solar else '-' }} kW
+                            </span>
+                        </p>
                     </div>
+
+
                     <div class="frame">
                         <h2>Hausverbrauch</h2>
-                        <p>Aktueller Verbrauch: <span id="EnergiebedarfHaus">{{ solar['EnergiebedarfHaus'].wert if 'EnergiebedarfHaus' in solar else '-' }} kW</span></p>
+
+                        <p>
+                            Aktueller Verbrauch:
+                            <span id="EnergiebedarfHaus">
+                                {{ solar['EnergiebedarfHaus'].wert if 'EnergiebedarfHaus' in solar else '-' }} kW
+                            </span>
+                        </p>
                     </div>
+
                 </div>
             </div>
         </div>
-	<!-- 💻 Services Slide (KORRIGIERT) -->
-<div class="swiper-slide service-slide">
-    <div class="card">
-        <h1 class="emoji">💻 Services</h1>
 
-        <div class="startpage-grid">
-            <!-- KitchenOwl Box -->
-            <div class="startpage-box">
-                <div class="box-title">
-                    <span class="emoji">🍽</span> KitchenOwl
-                </div>
-                <div class="box-value" id="KitchenOwlStatus"><span class="emoji">🔴</span> –</div>
-                <div class="box-sub" id="KitchenOwlCode"></div>
-            </div>
 
-            <!-- Portainer Box -->
-            <div class="startpage-box">
-                <div class="box-title">
-                    <span class="emoji">🐳</span> Portainer
+        <!-- 💻 Services Slide -->
+        <div class="swiper-slide service-slide">
+            <div class="card">
+
+                <h1 class="emoji">💻 Services</h1>
+
+                <div class="startpage-grid">
+
+                    <!-- KitchenOwl -->
+                    <div class="startpage-box">
+
+                        <div class="box-title">
+                            <span class="emoji">🍽</span> KitchenOwl
+                        </div>
+
+                        <div class="box-value" id="KitchenOwlStatus">
+                            <span class="emoji">🔴</span> –
+                        </div>
+
+                        <div class="box-sub" id="KitchenOwlCode"></div>
+
+                    </div>
+
+
+                    <!-- Portainer -->
+                    <div class="startpage-box">
+
+                        <div class="box-title">
+                            <span class="emoji">🐳</span> Portainer
+                        </div>
+
+                        <div class="box-value" id="PortainerStatus">
+                            <span class="emoji">🔴</span> –
+                        </div>
+
+                        <div class="box-sub" id="PortainerCode"></div>
+
+                    </div>
+
+
+                    <!-- Pi-hole -->
+                    <div class="startpage-box">
+
+                        <div class="box-title">
+                            <span class="emoji">🛡️</span> Pi-hole
+                        </div>
+
+                        <div class="box-value" id="PiHoleStatus">
+                            <span class="emoji">🔴</span> –
+                        </div>
+
+                        <div class="box-sub" id="PiHoleCode"></div>
+
+                    </div>
+
                 </div>
-                <div class="box-value" id="PortainerStatus"><span class="emoji">🔴</span> –</div>
-                <div class="box-sub" id="PortainerCode"></div>
-	</div>
- 	<div class="startpage-box">
-                <div class="box-title">
-                    <span class="emoji">🛡️</span> Pi-hole
-                </div>
-                <div class="box-value" id="PiHoleStatus">
-                    <span class="emoji">🔴</span> –
-                </div>
-                <div class="box-sub" id="PiHoleCode"></div>
-            </div>
             </div>
         </div>
-    </div>
-</div>
 
 
         <!-- Aktien Slide -->
         <div class="swiper-slide">
             <div class="card">
+
                 <h1 class="emoji">📈 Aktien</h1>
+
                 <p>Demnächst...</p>
+
             </div>
         </div>
 
     </div>
-    <div class="swiper-pagination"></div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+    <div class="swiper-pagination"></div>
+</div><script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script>
   const swiper = new Swiper('.swiper', {
       direction: 'horizontal',
@@ -480,7 +748,49 @@
 updateServices();
 setInterval(updateServices, 60000); // alle 60 Sekunden
 
+	function updateSensoren() {
+    		fetch('/api/sensoren')
+        		.then(res => res.json())
+        		.then(data => {
 
+            // Temperatur
+            const temperatur = document.getElementById('TemperaturSchuppen');
+
+            if (temperatur) {
+                temperatur.innerText =
+                    (data.TemperaturSchuppen ?? '-') + ' °C';
+            }
+
+            // Status-Punkt
+            const statusDot =
+                document.getElementById('SensorStatusSchuppenDot');
+
+            if (statusDot) {
+
+                if (
+                    data.SensorStatusSchuppen &&
+                    data.SensorStatusSchuppen.toLowerCase() === 'online'
+                ) {
+                    statusDot.classList.remove('sensor-offline');
+                    statusDot.classList.add('sensor-online');
+                } else {
+                    statusDot.classList.remove('sensor-online');
+                    statusDot.classList.add('sensor-offline');
+                }
+            }
+        })
+        .catch(() => {
+
+            // Bei Fehler ebenfalls rot anzeigen
+            const statusDot =
+                document.getElementById('SensorStatusSchuppenDot');
+
+            if (statusDot) {
+                statusDot.classList.remove('sensor-online');
+                statusDot.classList.add('sensor-offline');
+            }
+        });
+}
     // Wetter
     function updateWetter() {
         fetch('/api/wetter')
@@ -587,10 +897,12 @@ setInterval(updateServices, 60000); // alle 60 Sekunden
     updateWetter();
     updateSprit();
     updateSolar();
-    setInterval(updateStartpage, 300000);
-    setInterval(updateWetter, 300000);	
-    setInterval(updateSprit, 60000);
-    setInterval(updateSolar, 300000);
+    updateSensoren();
+    setInterval(updateSensoren, 6000);
+    setInterval(updateStartpage, 6000);
+    setInterval(updateWetter, 6000);	
+    setInterval(updateSprit, 6000);
+    setInterval(updateSolar, 6000);
 </script>
 
 </body>
