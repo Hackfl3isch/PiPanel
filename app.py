@@ -172,10 +172,10 @@ def evcc_control_loop():
 # ----------------------------------------------------
 def get_startpage_data():
     conn = mysql.connector.connect(
-        host="x",
-        user="x",
-        password="x",
-        database="x"
+        host="",
+        user="",
+        password="",
+        database=""
     )
     cursor = conn.cursor(dictionary=True)
 
@@ -233,27 +233,27 @@ def get_startpage_data():
 # ----------------------------------------------------
 def get_wetter():
     conn = mysql.connector.connect(
-        host="x",
-        user="x",
-        password="x",
-        database="x"
+        host="",
+        user="",
+        password="",
+        database=""
     )
     cursor = conn.cursor(dictionary=True)
 
     number_aliases = [
-        "x",
-        "x",
-        "x",
-        "x",
-        "x"
+        "TemperaturMomentan",
+        "TemperaturMinimalHeute",
+        "TemperaturMaximalHeute",
+        "TemperaturMinimalMorgen",
+        "TemperaturMaximalMorgen"
     ]
 
     string_aliases = [
-        "x",
-        "x",
-        "x",
-        "x",
-        "x"
+        "SonnenaufgangHeute",
+        "SonnenuntergangHeute",
+        "WetterStatusAktuell",
+        "SonnenaufgangMorgen",
+        "SonnenuntergangMorgen"
     ]
 
     wetter = {}
@@ -303,10 +303,10 @@ def get_wetter():
 # ----------------------------------------------------
 def get_spritpreise():
     conn = mysql.connector.connect(
-        host="x",
-        user="x",
-        password="x",
-        database="x"
+        host="",
+        user="",
+        password="",
+        database=""
     )
     cursor = conn.cursor(dictionary=True)
 
@@ -343,10 +343,10 @@ def get_spritpreise():
 # ----------------------------------------------------
 def get_solar():
     conn = mysql.connector.connect(
-        host="x",
-        user="x",
-        password="x",
-        database="x"
+        host="",
+        user="",
+        password="",
+        database=""
     )
     cursor = conn.cursor(dictionary=True)
 
@@ -373,7 +373,66 @@ def get_solar():
     cursor.close()
     conn.close()
     return solar
+def get_sensordaten():
+    conn = mysql.connector.connect(
+        host="",
+        user="",
+        password="",
+        database=""
+    )
 
+    cursor = conn.cursor(dictionary=True)
+
+    # Numerische Sensorwerte
+    number_aliases = [
+        "TemperaturSchuppen"
+    ]
+
+    # Status als String
+    string_aliases = [
+        "SensorStatusSchuppen"
+    ]
+
+    sensoren = {}
+
+    # Temperatur
+    query_num = """
+        SELECT t.val
+        FROM ts_number t
+        JOIN datapoints d ON t.id = d.id
+        WHERE d.name = %s
+        ORDER BY t.Datum DESC
+        LIMIT 1
+    """
+
+    for alias in number_aliases:
+        cursor.execute(query_num, (alias,))
+        row = cursor.fetchone()
+
+        if row:
+            sensoren[alias] = row["val"]
+
+    # Sensorstatus
+    query_str = """
+        SELECT t.val
+        FROM ts_string t
+        JOIN datapoints d ON t.id = d.id
+        WHERE d.name = %s
+        ORDER BY t.Datum DESC
+        LIMIT 1
+    """
+
+    for alias in string_aliases:
+        cursor.execute(query_str, (alias,))
+        row = cursor.fetchone()
+
+        if row:
+            sensoren[alias] = row["val"]
+
+    cursor.close()
+    conn.close()
+
+    return sensoren
 
 # ----------------------------------------------------
 # Routes
@@ -385,7 +444,8 @@ def index():
         wetter=get_wetter(),
         sprit=get_spritpreise(),
         solar=get_solar(),
-        startpage=get_startpage_data()
+        startpage=get_startpage_data(),
+        sensoren=get_sensordaten()
     )
 
 
@@ -413,6 +473,9 @@ def api_solar():
 def api_services():
     return jsonify(check_services())
 
+@app.route('/api/sensoren')
+def api_sensoren():
+    return jsonify(get_sensordaten())
 
 # ----------------------------------------------------
 if __name__ == '__main__':
