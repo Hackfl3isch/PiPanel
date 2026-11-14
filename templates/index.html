@@ -172,41 +172,78 @@
             border-radius: 8px;
             z-index: 1000;
         }
-        /* --- Sensoren --- */
-        .sensor-status-dot {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            margin-left: 8px;
-            vertical-align: middle;
-        }
 
-        .sensor-online {
-            background-color: #4CAF50;
-        }
 
-        .sensor-offline {
-            background-color: #F44336;
-        }
+/* Sensoren: drei gleich hohe Spalten */
+.sensor-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+    align-items: stretch;
+}
 
-        .sensor-box {
-            background: #333;
-            border-radius: 10px;
-            padding: 15px;
-        }
+/* Linke Spalte: zwei Frames untereinander */
+.sensor-left-column {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 20px;
+    min-height: 0;
+}
 
-        .sensor-name {
-            font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 1.2em;
-            text-align: center;
-        }
+/* Mittlere und rechte Spalte */
+.sensor-middle-column,
+.sensor-right-column {
+    display: flex;
+    min-height: 0;
+}
 
-        .sensor-value {
-            font-size: 1.5em;
-            text-align: center;
-        }
+/* Sensor-Frames */
+.sensor-box {
+    background: #333;
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+/* Sensorname und Statuspunkt */
+.sensor-name {
+    font-weight: bold;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+    text-align: center;
+}
+
+/* Statuspunkt */
+.sensor-status-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.sensor-online {
+    background-color: #4CAF50;
+}
+
+.sensor-offline {
+    background-color: #F44336;
+}
+
+/* Sensorwerte */
+.sensor-value {
+    font-size: 1.5em;
+    text-align: center;
+    margin: 8px 0;
+}
+
 
     </style>
     </style>
@@ -390,38 +427,138 @@
         </div>
 
 
-        <!-- Sensoren Slide -->
-        <div class="swiper-slide sensor-slide">
-            <div class="card">
 
-                <h1 class="emoji">🌡️ Sensoren</h1>
+<!-- Sensoren Slide -->
+<div class="swiper-slide sensor-slide">
+    <div class="card">
 
-                <div class="sprit-grid">
+        <h1>Sensoren</h1>
 
-                    <!-- Carport -->
-                    <div class="sensor-box">
+        <div class="sensor-layout">
 
-                        <div class="sensor-name">
-                            Carport
+            <!-- LINKE SEITE -->
+            <div class="sensor-left-column">
 
-                            <span
-                                id="SensorStatusSchuppenDot"
-                                class="sensor-status-dot sensor-offline">
-                            </span>
-                        </div>
+                <!-- Carport -->
+                <div class="sensor-box">
 
-                        <div class="sensor-value">
-                            Temperatur:
-                            <span id="TemperaturSchuppen">
-                                {{ sensoren['TemperaturSchuppen'] if 'TemperaturSchuppen' in sensoren else '-' }} °C
-                            </span>
-                        </div>
+                    <div class="sensor-name">
+                        Carport
+                        <span id="SensorStatusSchuppenDot"
+                              class="sensor-status-dot sensor-offline"
+                              title="Sensorstatus Carport"></span>
+                    </div>
 
+                    <div class="sensor-value">
+                        Temperatur:
+                        <span id="TemperaturSchuppen">
+                            {{ sensoren['TemperaturSchuppen'] if 'TemperaturSchuppen' in sensoren else '-' }} °C
+                        </span>
                     </div>
 
                 </div>
+
+                <!-- Terrasse -->
+                <div class="sensor-box">
+
+                    <div class="sensor-name">
+                        Terrasse
+                        <span id="StatusSensorTerasseDot"
+                              class="sensor-status-dot sensor-offline"
+                              title="Sensorstatus Terrasse"></span>
+                    </div>
+
+                    <div class="sensor-value">
+                        Temperatur:
+                        <span id="TemperaturTerasse">
+                            {{ sensoren['TemperaturTerasse'] if 'TemperaturTerasse' in sensoren else '-' }} °C
+                        </span>
+                    </div>
+
+                </div>
+
             </div>
+
+
+            <!-- MITTE: WOHNZIMMER -->
+            <div class="sensor-middle-column">
+
+                <div class="sensor-box">
+
+                    <div class="sensor-name">
+                        Wohnzimmer
+                        <span id="SensorStatusWohnzimmerDot"
+                              class="sensor-status-dot sensor-offline"
+                              title="Sensorstatus Wohnzimmer"></span>
+                    </div>
+
+                    <div class="sensor-value">
+                        Temperatur:
+                        <span id="TemperaturWohnzimmer">
+                            {{ sensoren['TemperaturWohnzimmer'] if 'TemperaturWohnzimmer' in sensoren else '-' }} °C
+                        </span>
+                    </div>
+
+                    <div class="sensor-value">
+                        Luftfeuchtigkeit:
+                        <span id="LuftfeuchtigkeitWohnzimmer">
+                            {{ sensoren['LuftfeuchtigkeitWohnzimmer'] if 'LuftfeuchtigkeitWohnzimmer' in sensoren else '-' }} %
+                        </span>
+                    </div>
+
+                    <div class="sensor-value">
+                        Luftdruck:
+                        <span id="LuftdruckWohnzimmer">
+                            {{ sensoren['LuftdruckWohnzimmer'] if 'LuftdruckWohnzimmer' in sensoren else '-' }} hPa
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- RECHTS: WASCHKELLER -->
+            <div class="sensor-right-column">
+
+                <div class="sensor-box">
+
+                    <div class="sensor-name">
+                        Waschkeller
+                        <span id="SensorStatusWaschkellerDot"
+                              class="sensor-status-dot sensor-offline"
+                              title="Sensorstatus Waschkeller"></span>
+                    </div>
+
+                    <div class="sensor-value">
+                        Temperatur:
+                        <span id="TemperaturWaschkeller">
+                            {{ sensoren['TemperaturWaschkeller'] if 'TemperaturWaschkeller' in sensoren else '-' }} °C
+                        </span>
+                    </div>
+
+                    <div class="sensor-value">
+                        Luftfeuchtigkeit:
+                        <span id="LuftfeuchtigkeitWaschkeller">
+                            {{ sensoren['LuftfeuchtigkeitWaschkeller'] if 'LuftfeuchtigkeitWaschkeller' in sensoren else '-' }} %
+                        </span>
+                    </div>
+
+                    <div class="sensor-value">
+                        Luftdruck:
+                        <span id="LuftdruckWaschkeller">
+                            {{ sensoren['LuftdruckWaschkeller'] if 'LuftdruckWaschkeller' in sensoren else '-' }} hPa
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
+    </div>
+</div>
+
 
 
         <!-- Spritpreise Slide -->
@@ -748,49 +885,79 @@
 updateServices();
 setInterval(updateServices, 60000); // alle 60 Sekunden
 
-	function updateSensoren() {
-    		fetch('/api/sensoren')
-        		.then(res => res.json())
-        		.then(data => {
-
-            // Temperatur
-            const temperatur = document.getElementById('TemperaturSchuppen');
-
-            if (temperatur) {
-                temperatur.innerText =
-                    (data.TemperaturSchuppen ?? '-') + ' °C';
+        function updateSensoren() {
+    fetch('/api/sensoren')
+        .then(res => {
+            if (!res.ok) {
+                throw new Error('Sensor-API nicht erreichbar');
             }
+            return res.json();
+        })
+        .then(data => {
 
-            // Status-Punkt
-            const statusDot =
-                document.getElementById('SensorStatusSchuppenDot');
+            // Alle Sensorwerte aktualisieren
+            const sensorWerte = [
+                ['TemperaturSchuppen', ' °C'],
+                ['TemperaturTerasse', ' °C'],
+                ['TemperaturWohnzimmer', ' °C'],
+                ['LuftfeuchtigkeitWohnzimmer', ' %'],
+                ['LuftdruckWohnzimmer', ' hPa'],
+                ['TemperaturWaschkeller', ' °C'],
+                ['LuftfeuchtigkeitWaschkeller', ' %'],
+                ['LuftdruckWaschkeller', ' hPa']
+            ];
 
-            if (statusDot) {
+            sensorWerte.forEach(([alias, einheit]) => {
+                const element = document.getElementById(alias);
 
-                if (
-                    data.SensorStatusSchuppen &&
-                    data.SensorStatusSchuppen.toLowerCase() === 'online'
-                ) {
-                    statusDot.classList.remove('sensor-offline');
-                    statusDot.classList.add('sensor-online');
-                } else {
-                    statusDot.classList.remove('sensor-online');
-                    statusDot.classList.add('sensor-offline');
+                if (element) {
+                    element.innerText = (data[alias] ?? '-') + einheit;
                 }
-            }
+            });
+
+            // Status aller vier Sensoren aktualisieren
+            const sensorStatus = [
+                ['SensorStatusSchuppenDot', data.SensorStatusSchuppen],
+                ['StatusSensorTerasseDot', data.StatusSensorTerasse],
+                ['SensorStatusWohnzimmerDot', data.SensorStatusWohnzimmer],
+                ['SensorStatusWaschkellerDot', data.SensorStatusWaschkeller]
+            ];
+
+            sensorStatus.forEach(([elementId, status]) => {
+
+                const statusDot = document.getElementById(elementId);
+
+                if (!statusDot) return;
+
+                const istOnline =
+                    typeof status === 'string' &&
+                    status.toLowerCase() === 'online';
+
+                statusDot.classList.toggle('sensor-online', istOnline);
+                statusDot.classList.toggle('sensor-offline', !istOnline);
+            });
+
         })
         .catch(() => {
 
-            // Bei Fehler ebenfalls rot anzeigen
-            const statusDot =
-                document.getElementById('SensorStatusSchuppenDot');
+            // Bei API-Fehler alle Sensoren auf offline setzen
+            [
+                'SensorStatusSchuppenDot',
+                'StatusSensorTerasseDot',
+                'SensorStatusWohnzimmerDot',
+                'SensorStatusWaschkellerDot'
+            ].forEach(elementId => {
 
-            if (statusDot) {
-                statusDot.classList.remove('sensor-online');
-                statusDot.classList.add('sensor-offline');
-            }
+                const statusDot = document.getElementById(elementId);
+
+                if (statusDot) {
+                    statusDot.classList.remove('sensor-online');
+                    statusDot.classList.add('sensor-offline');
+                }
+            });
         });
 }
+
     // Wetter
     function updateWetter() {
         fetch('/api/wetter')
@@ -832,13 +999,13 @@ setInterval(updateServices, 60000); // alle 60 Sekunden
                 }
             });
     }
-	
+
     // --- Startpage ---
     function updateStartpage() {
         fetch('/api/startpage')
             .then(res => res.json())
             .then(data => {
-		document.getElementById('SolarSOCStart').innerText = (data.SolarSOC ?? '-') + '%';
+                document.getElementById('SolarSOCStart').innerText = (data.SolarSOC ?? '-') + '%';
                 document.getElementById('pvGesamt').innerText = (data.PV_gesamt ?? '-') + ' kW';
                 document.getElementById('wetterStatusStart').innerText = data.WetterStatusAktuell ?? '-';
                 document.getElementById('tempStart').innerText = (data.TemperaturMomentan ?? '-') + ' °C';
@@ -900,7 +1067,7 @@ setInterval(updateServices, 60000); // alle 60 Sekunden
     updateSensoren();
     setInterval(updateSensoren, 6000);
     setInterval(updateStartpage, 6000);
-    setInterval(updateWetter, 6000);	
+    setInterval(updateWetter, 6000);
     setInterval(updateSprit, 6000);
     setInterval(updateSolar, 6000);
 </script>
