@@ -1,20 +1,21 @@
+
 from flask import Flask, render_template, jsonify
 import mysql.connector
 from datetime import datetime
-import requests   # <<< NEU
+import requests
 import threading
 import time
 
 app = Flask(__name__)
 
 # ----------------------------------------------------
-# Service-Status prüfen (KitchenOwl & Portainer)
+# Service-Status prüfen (KitchenOwl, Portainer, PiHole)
 # ----------------------------------------------------
 def check_services():
     services = {
         "KitchenOwl": "http://192.168.178.118:32768/signin",
         "Portainer": "http://192.168.178.118:9000/#!/auth",
-	"PiHole": "http://192.168.178.33/admin/login"
+        "PiHole": "http://192.168.178.33/admin/login"
     }
 
     status = {}
@@ -40,147 +41,243 @@ def check_services():
 # ----------------------------------------------------
 # EVCC Ladepunkt steuern
 # ----------------------------------------------------
-
 EVCC_URL = "http://192.168.178.118:7070"
 
+LOADPOINT_ID = 1
+
 # True = Sommerlogik aktiv
-# False = Akku-Regeln komplett deaktivieren
-USE_BATTERY_RULES = True
+# False = Keine Eingriffe in EVCC
+USE_BATTERY_RULES = False
+
+# Status alle 60 Sekunden prüfen
+CHECK_INTERVAL = 60
+
+# True = Nur Entscheidungen anzeigen
+# False = Schaltbefehle senden
+DRY_RUN = False
+
+session = requests.Session()
 
 
+# ==========================================
+# EVCC STATUS AUSLESEN
+# ==========================================
 def get_evcc_state():
-    """
-    Liest den aktuellen EVCC-Status.
-
-    Rückgabe:
-        {
-            "soc": float,
-            "mode": str
-        }
-    """
 
     try:
-        r = requests.get(f"{EVCC_URL}/api/state", timeout=5)
-        r.raise_for_status()
-
-        data = r.json()
-
-        return {
-            "soc": float(data["battery"]["soc"]),
-            "mode": data["loadpoints"][0]["mode"]
-        }
-
-    except Exception as e:
-        print("EVCC Status konnte nicht gelesen werden:", e)
-        return None
-
-
-def set_loadpoint(enabled, current_mode):
-    """
-    Schaltet den Ladepunkt nur dann,
-    wenn sich der Modus tatsächlich ändern muss.
-    """
-
-    target_mode = "minpv" if enabled else "off"
-
-    if current_mode == target_mode:
-        return
-
-    try:
-        r = requests.post(
-            f"{EVCC_URL}/api/loadpoints/1/mode/{target_mode}",
+        response = session.get(
+            f"{EVCC_URL}/api/state",
             timeout=5
         )
 
-        r.raise_for_status()
+        response.raise_for_status()
 
-        print(f"{datetime.now():%H:%M:%S} -> Ladepunkt auf {target_mode}")
+        data = response.json()
+        data = data.get("result", data)
 
-    except Exception as e:
-        print("Fehler beim Schalten:", e)
+        battery = data["battery"]
+
+        loadpoint = data["loadpoints"][
+            LOADPOINT_ID - 1
+        ]
+
+        return {
+            "soc": float(battery["soc"]),
+            "mode": loadpoint["mode"],
+            "always_charge": loadpoint["alwaysCharge"]
+        }
+
+    except (
+        requests.RequestException,
+        ValueError,
+        KeyError,
+        IndexError,
+        TypeError
+    ) as error:
+
+        print(
+            "Fehler beim Lesen des EVCC-Status:",
+            error
+        )
+
+        return None
 
 
+# ==========================================
+# API BEFEHL SENDEN
+# ==========================================
+def send_command(path):
+
+    url = f"{EVCC_URL}{path}"
+
+    if DRY_RUN:
+        print(f"TESTMODUS: POST {path}")
+        return True
+
+    try:
+        response = session.post(
+            url,
+            timeout=5
+        )
+
+        response.raise_for_status()
+
+        return True
+
+    except requests.RequestException as error:
+
+        print("Fehler beim Schalten:", error)
+
+        return False
+
+
+# ==========================================
+# LADEPUNKT SCHALTEN
+# ==========================================
+def set_loadpoint(enabled, state):
+
+    current_mode = state["mode"]
+    always_charge = state["always_charge"]
+
+    if enabled:
+
+        if always_charge != "on":
+
+            if not send_command(
+                f"/api/loadpoints/{LOADPOINT_ID}"
+                "/alwayscharge/on"
+            ):
+                return
+
+        if current_mode != "smart":
+
+            if not send_command(
+                f"/api/loadpoints/{LOADPOINT_ID}"
+                "/mode/smart"
+            ):
+                return
+
+        if (
+            current_mode != "smart"
+            or always_charge != "on"
+        ):
+            print(
+                f"{datetime.now():%H:%M:%S}"
+                " -> MIN+PV EIN"
+            )
+
+    else:
+
+        if current_mode != "off":
+
+            if send_command(
+                f"/api/loadpoints/{LOADPOINT_ID}"
+                "/mode/off"
+            ):
+
+                print(
+                    f"{datetime.now():%H:%M:%S}"
+                    " -> LADEN AUS"
+                )
+
+
+# ==========================================
+# HAUPTSCHLEIFE EVCC
+# ==========================================
 def evcc_control_loop():
-    """
-    Prüft jede Minute Uhrzeit und Batteriespeicher.
-    """
+
+    print("EVCC Ladeautomatik gestartet")
+    print("Batterieregeln:", USE_BATTERY_RULES)
+    print("Testmodus:", DRY_RUN)
 
     while True:
+
+        if not USE_BATTERY_RULES:
+
+            print(
+                f"{datetime.now():%H:%M:%S}"
+                " | Automatik deaktiviert"
+            )
+
+            time.sleep(CHECK_INTERVAL)
+            continue
 
         state = get_evcc_state()
 
         if state is None:
-            time.sleep(60)
+
+            time.sleep(CHECK_INTERVAL)
             continue
 
         soc = state["soc"]
-        current_mode = state["mode"]
+        mode = state["mode"]
 
-        print(
-            f"{datetime.now():%H:%M:%S} | "
-            f"SoC: {soc:.1f}% | "
-            f"Modus: {current_mode}"
-        )
-        if not USE_BATTERY_RULES:
-            time.sleep(6000)
-            continue
-        
         now = datetime.now()
 
-        # --------------------------------------------------
-        # Nachts niemals laden (22:00 - 09:00)
-        # --------------------------------------------------
-        if now.hour >= 22 or now.hour < 9:
+        print(
+            f"{now:%H:%M:%S} | "
+            f"Akku: {soc:.1f}% | "
+            f"Modus: {mode} | "
+            f"Min+PV: {state['always_charge']}"
+        )
 
-            set_loadpoint(False, current_mode)
+        # 19:00 - 09:00
+        # Immer AUS
+        if now.hour >= 19 or now.hour < 9:
 
-        # --------------------------------------------------
-        # Zwischen 09:00 und 12:00
-        # Einschalten ab 20 %
-        # Ausschalten unter 15 %
-        # --------------------------------------------------
-        elif 8 <= now.hour < 12:
+            set_loadpoint(False, state)
+
+        # 09:00 - 12:00
+        # EIN ab 20 %
+        # AUS unter 15 %
+        elif 9 <= now.hour < 12:
 
             if soc >= 20:
-                set_loadpoint(True, current_mode)
+                set_loadpoint(True, state)
 
             elif soc < 15:
-                set_loadpoint(False, current_mode)
+                set_loadpoint(False, state)
 
-        # --------------------------------------------------
-        # Akku-Regeln deaktiviert
-        # --------------------------------------------------
-        #elif not USE_BATTERY_RULES:
-
-         #   set_loadpoint(True, current_mode)
-
-        # --------------------------------------------------
-        # Akku-Regeln aktiv
-        # --------------------------------------------------
+        # 12:00 - 19:00
+        # EIN ab 85 %
+        # AUS unter 75 %
         else:
 
             if soc >= 85:
-                set_loadpoint(True, current_mode)
+                set_loadpoint(True, state)
 
             elif soc < 75:
-                set_loadpoint(False, current_mode)
+                set_loadpoint(False, state)
 
-        time.sleep(60)
+        time.sleep(CHECK_INTERVAL)
+
 
 # ----------------------------------------------------
 # Startpage-Daten
 # ----------------------------------------------------
 def get_startpage_data():
+
     conn = mysql.connector.connect(
         host="",
         user="",
         password="",
         database=""
     )
+
     cursor = conn.cursor(dictionary=True)
 
-    string_aliases = ["Cheapest_Name", "WetterStatusAktuell"]
-    number_aliases = ["SolarSOC","TemperaturMomentan", "PV_Ost", "PV_West","Cheapest_Diesel"]
+    string_aliases = [
+        "Cheapest_Name",
+        "WetterStatusAktuell"
+    ]
+
+    number_aliases = [
+        "SolarSOC",
+        "TemperaturMomentan",
+        "PV_Ost",
+        "PV_West",
+        "Cheapest_Diesel"
+    ]
 
     startpage = {}
 
@@ -192,9 +289,12 @@ def get_startpage_data():
         ORDER BY t.Datum DESC
         LIMIT 1
     """
+
     for alias in string_aliases:
+
         cursor.execute(query_str, (alias,))
         row = cursor.fetchone()
+
         if row:
             startpage[alias] = row["val"]
 
@@ -206,25 +306,40 @@ def get_startpage_data():
         ORDER BY t.Datum DESC
         LIMIT 1
     """
+
     temp_data = {}
+
     for alias in number_aliases:
+
         cursor.execute(query_num, (alias,))
         row = cursor.fetchone()
+
         if row:
             temp_data[alias] = row["val"]
 
     pv_ost = temp_data.get("PV_Ost", 0)
     pv_west = temp_data.get("PV_West", 0)
 
-    startpage["TemperaturMomentan"] = temp_data.get("TemperaturMomentan")
-    startpage["PV_gesamt"] = round((pv_ost + pv_west) / 1000.0, 3)
+    startpage["TemperaturMomentan"] = temp_data.get(
+        "TemperaturMomentan"
+    )
+
+    startpage["PV_gesamt"] = round(
+        (pv_ost + pv_west) / 1000.0, 3
+    )
+
     startpage["PV_Ost"] = round(pv_ost / 1000.0, 3)
     startpage["PV_West"] = round(pv_west / 1000.0, 3)
-    startpage["Cheapest_Diesel"] = temp_data.get("Cheapest_Diesel")
+
+    startpage["Cheapest_Diesel"] = temp_data.get(
+        "Cheapest_Diesel"
+    )
+
     startpage["SolarSOC"] = temp_data.get("SolarSOC")
 
     cursor.close()
     conn.close()
+
     return startpage
 
 
@@ -232,12 +347,14 @@ def get_startpage_data():
 # Wetter
 # ----------------------------------------------------
 def get_wetter():
+
     conn = mysql.connector.connect(
         host="",
         user="",
         password="",
         database=""
     )
+
     cursor = conn.cursor(dictionary=True)
 
     number_aliases = [
@@ -266,9 +383,12 @@ def get_wetter():
         ORDER BY t.Datum DESC
         LIMIT 1
     """
+
     for alias in number_aliases:
+
         cursor.execute(query_num, (alias,))
         row = cursor.fetchone()
+
         if row:
             wetter[alias] = row["val"]
 
@@ -280,21 +400,35 @@ def get_wetter():
         ORDER BY t.Datum DESC
         LIMIT 1
     """
+
     for alias in string_aliases:
+
         cursor.execute(query_str, (alias,))
         row = cursor.fetchone()
+
         if row:
+
             val = row["val"]
-            if "Sonnenaufgang" in alias or "Sonnenuntergang" in alias:
+
+            if (
+                "Sonnenaufgang" in alias
+                or "Sonnenuntergang" in alias
+            ):
+
                 try:
                     ts = int(val) / 1000
-                    val = datetime.fromtimestamp(ts).strftime("%H:%M")
+                    val = datetime.fromtimestamp(
+                        ts
+                    ).strftime("%H:%M")
+
                 except:
                     pass
+
             wetter[alias] = val
 
     cursor.close()
     conn.close()
+
     return wetter
 
 
@@ -302,23 +436,39 @@ def get_wetter():
 # Spritpreise
 # ----------------------------------------------------
 def get_spritpreise():
+
     conn = mysql.connector.connect(
         host="",
         user="",
         password="",
         database=""
     )
+
     cursor = conn.cursor(dictionary=True)
 
     aliases = [
-        "BFT_Rösrath_E5","BFT_Rösrath_E10","BFT_Rösrath_Diesel",
-        "JET_E5","JET_E10","JET_Diesel",
-        "Total_E5","Total_E10","Total_Diesel",
-        "BFT_Hoffnungsthal_E5","BFT_Hoffnungsthal_E10","BFT_Hoffnungsthal_Diesel",
-        "Mundorf_E5","Mundorf_E10","Mundorf_Diesel","Roth_E5","Roth_Diesel","Roth_E10"
+        "BFT_Rösrath_E5",
+        "BFT_Rösrath_E10",
+        "BFT_Rösrath_Diesel",
+        "JET_E5",
+        "JET_E10",
+        "JET_Diesel",
+        "Total_E5",
+        "Total_E10",
+        "Total_Diesel",
+        "BFT_Hoffnungsthal_E5",
+        "BFT_Hoffnungsthal_E10",
+        "BFT_Hoffnungsthal_Diesel",
+        "Mundorf_E5",
+        "Mundorf_E10",
+        "Mundorf_Diesel",
+        "Roth_E5",
+        "Roth_Diesel",
+        "Roth_E10"
     ]
 
     prices = {}
+
     query = """
         SELECT t.val
         FROM ts_number t
@@ -327,14 +477,20 @@ def get_spritpreise():
         ORDER BY t.Datum DESC
         LIMIT 1
     """
+
     for alias in aliases:
+
         cursor.execute(query, (alias,))
         row = cursor.fetchone()
+
         if row:
-            prices[alias] = {"preis": row["val"]}
+            prices[alias] = {
+                "preis": row["val"]
+            }
 
     cursor.close()
     conn.close()
+
     return prices
 
 
@@ -342,15 +498,23 @@ def get_spritpreise():
 # Solar
 # ----------------------------------------------------
 def get_solar():
+
     conn = mysql.connector.connect(
         host="",
         user="",
         password="",
         database=""
     )
+
     cursor = conn.cursor(dictionary=True)
 
-    aliases = ["SolarSOC", "PV_Ost", "PV_West","EnergiebedarfHaus"]
+    aliases = [
+        "SolarSOC",
+        "PV_Ost",
+        "PV_West",
+        "EnergiebedarfHaus"
+    ]
+
     solar = {}
 
     query = """
@@ -361,19 +525,34 @@ def get_solar():
         ORDER BY t.Datum DESC
         LIMIT 1
     """
+
     for alias in aliases:
+
         cursor.execute(query, (alias,))
         row = cursor.fetchone()
+
         if row:
+
             val = row["val"]
+
             if alias != "SolarSOC":
                 val = round(val / 1000.0, 3)
-            solar[alias] = {"wert": val}
+
+            solar[alias] = {
+                "wert": val
+            }
 
     cursor.close()
     conn.close()
+
     return solar
+
+
+# ----------------------------------------------------
+# Sensoren und zusätzliche Anlagendaten
+# ----------------------------------------------------
 def get_sensordaten():
+
     conn = mysql.connector.connect(
         host="",
         user="",
@@ -383,19 +562,48 @@ def get_sensordaten():
 
     cursor = conn.cursor(dictionary=True)
 
-    # Numerische Sensorwerte
+    # Numerische Werte
     number_aliases = [
-        "TemperaturSchuppen"
+
+        # Bestehende Sensoren
+        "TemperaturSchuppen",
+        "TemperaturWohnzimmer",
+        "LuftfeuchtigkeitWohnzimmer",
+        "LuftdruckWohnzimmer",
+
+        # Wärmepumpe
+        "AußentemperaturWärmepumpe",
+        "StartsWärmepumpe",
+        "StundenLaufzeitWärmepumpe",
+        "TemperaturWasser",
+
+        # Waschkeller
+        "LuftdruckWaschkeller",
+        "LuftfeuchtigkeitWaschkeller",
+        "TemperaturWaschkeller",
+
+        # Terrasse
+        "TemperaturTerasse",
+
+        # BMW
+        "BMW_VerbleinderTank"
     ]
 
-    # Status als String
+    # String-Werte
     string_aliases = [
-        "SensorStatusSchuppen"
+
+        # Bestehende Sensoren
+        "SensorStatusSchuppen",
+        "SensorStatusWohnzimmer",
+
+        # Neue Sensorstatus
+        "SensorStatusWaschkeller",
+        "StatusSensorTerasse"
     ]
 
     sensoren = {}
 
-    # Temperatur
+    # Numerische Sensorwerte abfragen
     query_num = """
         SELECT t.val
         FROM ts_number t
@@ -406,13 +614,14 @@ def get_sensordaten():
     """
 
     for alias in number_aliases:
+
         cursor.execute(query_num, (alias,))
         row = cursor.fetchone()
 
         if row:
             sensoren[alias] = row["val"]
 
-    # Sensorstatus
+    # Statuswerte abfragen
     query_str = """
         SELECT t.val
         FROM ts_string t
@@ -423,6 +632,7 @@ def get_sensordaten():
     """
 
     for alias in string_aliases:
+
         cursor.execute(query_str, (alias,))
         row = cursor.fetchone()
 
@@ -434,11 +644,13 @@ def get_sensordaten():
 
     return sensoren
 
+
 # ----------------------------------------------------
 # Routes
 # ----------------------------------------------------
 @app.route('/')
 def index():
+
     return render_template(
         "index.html",
         wetter=get_wetter(),
@@ -451,32 +663,90 @@ def index():
 
 @app.route('/api/startpage')
 def api_startpage():
+
     return jsonify(get_startpage_data())
 
 
 @app.route('/api/wetter')
 def api_wetter():
+
     return jsonify(get_wetter())
 
 
 @app.route('/api/sprit')
 def api_sprit():
+
     return jsonify(get_spritpreise())
 
 
 @app.route('/api/solar')
 def api_solar():
+
     return jsonify(get_solar())
 
 
 @app.route('/api/services')
 def api_services():
+
     return jsonify(check_services())
+
 
 @app.route('/api/sensoren')
 def api_sensoren():
+
     return jsonify(get_sensordaten())
 
+
+@app.route('/api/scriptable')
+def api_scriptable():
+    """JSON-Schnittstelle für Scriptable."""
+
+    startpage = get_startpage_data()
+    solar = get_solar()
+    sensoren = get_sensordaten()
+
+    def solar_wert(alias):
+
+        eintrag = solar.get(alias)
+
+        return (
+            eintrag.get("wert")
+            if isinstance(eintrag, dict)
+            else None
+        )
+
+    return jsonify({
+
+        "WetterStatusAktuell":
+            startpage.get("WetterStatusAktuell"),
+
+        "batterie_soc_prozent":
+            startpage.get("SolarSOC"),
+
+        "pv_gesamt_kw":
+            startpage.get("PV_gesamt"),
+
+        "pv_ost_kw":
+            solar_wert("PV_Ost"),
+
+        "pv_west_kw":
+            solar_wert("PV_West"),
+
+        "hausverbrauch_kw":
+            solar_wert("EnergiebedarfHaus"),
+
+        "sensoren":
+            sensoren,
+
+        "aktualisiert":
+            datetime.now().astimezone().isoformat(
+                timespec="seconds"
+            )
+    })
+
+
+# ----------------------------------------------------
+# Programmstart
 # ----------------------------------------------------
 if __name__ == '__main__':
 
@@ -484,6 +754,7 @@ if __name__ == '__main__':
         target=evcc_control_loop,
         daemon=True
     )
+
     thread.start()
 
     app.run(
